@@ -6,14 +6,14 @@ A Flutter mobile application using camera capture, on-device TensorFlow Lite inf
 
 The following packages are currently installed:
 
-- `camera: ^0.9.8+1` — Accesses device cameras for image capture and stream handling.
-- `tflite_flutter: ^0.9.0` — Runs TensorFlow Lite models on-device.
-- `tflite_flutter_helper: ^0.3.1` — Provides preprocessing/postprocessing utilities for TFLite inputs and outputs.
-- `flutter_tts: ^3.8.0` — Converts text to speech on mobile platforms.
-- `provider: ^6.0.0` — Lightweight state management and dependency injection.
-- `permission_handler: ^11.0.0` — Requests and checks runtime permissions.
-- `path_provider: ^2.0.15` — Gets platform-specific filesystem paths (documents, temp, cache).
-- `cupertino_icons: ^1.0.8` — iOS-style icon set for Flutter widgets.
+- `camera: ^0.9.8+1` : Accesses device cameras for image capture and stream handling.
+- `tflite_flutter: ^0.9.0` : Runs TensorFlow Lite models on-device.
+- `tflite_flutter_helper: ^0.3.1` : Provides preprocessing/postprocessing utilities for TFLite inputs and outputs.
+- `flutter_tts: ^3.8.0` : Converts text to speech on mobile platforms.
+- `provider: ^6.0.0` : Lightweight state management and dependency injection.
+- `permission_handler: ^11.0.0` : Requests and checks runtime permissions.
+- `path_provider: ^2.0.15` : Gets platform-specific filesystem paths (documents, temp, cache).
+- `cupertino_icons: ^1.0.8` : iOS-style icon set for Flutter widgets.
 
 ## Project Structure
 
