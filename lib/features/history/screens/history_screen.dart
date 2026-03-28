@@ -106,44 +106,48 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top bar with "sidebar" label and close icon
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'sidebar',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  IconButton(icon: const Icon(Icons.close), onPressed: onClose),
-                ],
-              ),
-            ),
-            // Green header section
+            // Green header section (at top) with close button inside
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(8, 12, 16, 16),
               color: const Color(0xFF2DC9A0),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'السجل',
-                    textDirection: TextDirection.rtl,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: onClose,
                     ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'آخر ترجماتك',
-                    textDirection: TextDirection.rtl,
-                    style: TextStyle(fontSize: 14, color: Colors.white70),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'السجل',
+                            textDirection: TextDirection.rtl,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'آخر ترجماتك',
+                            textDirection: TextDirection.rtl,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             // Records list
