@@ -297,45 +297,68 @@ class _OldRecordScreenState extends State<OldRecordScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'details',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
             // Green header
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               color: const Color(0xFF2DC9A0),
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            widget.record.title,
+                            textDirection: TextDirection.rtl,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'تفاصيل الترجمة',
+                            textDirection: TextDirection.rtl,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Audio transcript section (moved above the audio player)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: Colors.grey.shade100,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.record.title,
-                    textDirection: TextDirection.rtl,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 4),
                   const Text(
-                    'تفاصيل الترجمة',
+                    'نص الصوت',
                     textDirection: TextDirection.rtl,
-                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.record.audioText,
+                    textDirection: TextDirection.rtl,
+                    style: const TextStyle(fontSize: 13),
                   ),
                 ],
               ),
@@ -495,27 +518,6 @@ class _OldRecordScreenState extends State<OldRecordScreen>
                     ),
                   ],
                 ),
-              ),
-            ),
-            // Audio transcript section
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.grey.shade100,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'نص الصوت',
-                    textDirection: TextDirection.rtl,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.record.audioText,
-                    textDirection: TextDirection.rtl,
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ],
               ),
             ),
           ],
