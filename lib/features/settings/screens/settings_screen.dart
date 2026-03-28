@@ -78,8 +78,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               textDirection: TextDirection.rtl,
                               style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: _selectedDuration ==
-                                        _durations[index]
+                                fontWeight:
+                                    _selectedDuration == _durations[index]
                                     ? FontWeight.bold
                                     : FontWeight.normal,
                                 color: _selectedDuration == _durations[index]
@@ -88,10 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ),
                             if (_selectedDuration == _durations[index])
-                              const Icon(
-                                Icons.check,
-                                color: Color(0xFF2DC9A0),
-                              ),
+                              const Icon(Icons.check, color: Color(0xFF2DC9A0)),
                           ],
                         ),
                       ),
@@ -114,50 +111,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'settings',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            // Green header section
+            // Green header section (at top) with back arrow inside
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(8, 12, 16, 16),
               color: const Color(0xFF2DC9A0),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'إعدادات التخزين',
-                    textDirection: TextDirection.rtl,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'اختر مدة حفظ التسجيلات',
-                    textDirection: TextDirection.rtl,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'إعدادات التخزين',
+                            textDirection: TextDirection.rtl,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'اختر مدة حفظ التسجيلات',
+                            textDirection: TextDirection.rtl,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             // Settings content
