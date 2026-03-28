@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tsl_mobile_app/features/camera/screens/camera_screen.dart';
 import 'package:tsl_mobile_app/features/history/screens/history_screen.dart';
 import 'package:tsl_mobile_app/features/settings/screens/settings_screen.dart';
@@ -11,6 +12,10 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      endDrawer: Drawer(
+        width: MediaQuery.sizeOf(context).width * 0.85,
+        child: HistoryScreen(onClose: () => Navigator.of(context).pop()),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -22,25 +27,6 @@ class HomeScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Menu Button
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          FadeSlidePageRoute(page: const HistoryScreen()),
-                        );
-                      },
-                      icon: const Icon(Icons.menu, color: Colors.white),
-                      label: const Text(
-                        'السجل',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2DC9A0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                    ),
                     // Settings Icon
                     IconButton(
                       onPressed: () {
@@ -54,15 +40,36 @@ class HomeScreen extends StatelessWidget {
                         size: 30,
                       ),
                     ),
+                    // Menu Button
+                    Builder(
+                      builder: (context) {
+                        return ElevatedButton.icon(
+                          onPressed: () {
+                            Scaffold.of(context).openEndDrawer();
+                          },
+                          icon: const Icon(Icons.menu, color: Colors.white),
+                          label: const Text(
+                            'السجل',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2DC9A0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
               const Spacer(),
               // Logo Icon
-              const Icon(
-                Icons.upload_rounded,
-                color: Color(0xFF2DC9A0),
-                size: 60,
+              SvgPicture.asset(
+                'assets/icons/mint_hand.svg',
+                width: 60,
+                height: 60,
               ),
               const SizedBox(height: 20),
               // Title Text
@@ -101,9 +108,9 @@ class HomeScreen extends StatelessWidget {
                   height: 55,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      Navigator.of(context).push(
-                        SlidePageRoute(page: const CameraScreen()),
-                      );
+                      Navigator.of(
+                        context,
+                      ).push(SlidePageRoute(page: const CameraScreen()));
                     },
                     icon: const Icon(
                       Icons.circle,

@@ -16,7 +16,7 @@ class AppRoutes {
   static Map<String, WidgetBuilder> routes = {
     '/': (context) => const HomeScreen(),
     '/camera': (context) => const CameraScreen(),
-    '/history': (context) => const HistoryScreen(),
+    '/history': (context) => const HistoryPage(),
     '/settings': (context) => const SettingsScreen(),
     '/result': (context) => const ResultScreen(),
   };
@@ -28,7 +28,7 @@ class AppRoutes {
       case '/camera':
         return SlidePageRoute(page: const CameraScreen());
       case '/history':
-        return FadeSlidePageRoute(page: const HistoryScreen());
+        return FadeSlidePageRoute(page: const HistoryPage());
       case '/settings':
         return FadeSlidePageRoute(page: const SettingsScreen());
       case '/result':
@@ -36,9 +36,7 @@ class AppRoutes {
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
-            body: Center(
-              child: Text('No route defined for ${settings.name}'),
-            ),
+            body: Center(child: Text('No route defined for ${settings.name}')),
           ),
         );
     }

@@ -54,8 +54,8 @@ dependencies:
     sdk: flutter
   intl: ^0.20.2
   
-  # Optional image support
-  # flutter_svg: ^2.0.0  # Works but not needed for demo
+  # Image / vector assets
+  flutter_svg: ^2.0.10
 
 dev_dependencies:
   flutter_test:
@@ -83,6 +83,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/icons/mint_hand.svg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

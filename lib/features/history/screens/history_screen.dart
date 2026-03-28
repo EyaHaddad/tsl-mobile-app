@@ -10,9 +10,24 @@ class Record {
   Record({required this.title, required this.date, required this.audioText});
 }
 
-// Sidebar Screen - History List
+// Full-screen wrapper (keeps HistoryScreen reusable inside a drawer)
+class HistoryPage extends StatelessWidget {
+  const HistoryPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: HistoryScreen(onClose: () => Navigator.of(context).maybePop()),
+    );
+  }
+}
+
+// Sidebar content - History List (reusable inside Drawer)
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final VoidCallback? onClose;
+
+  const HistoryScreen({super.key, this.onClose});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -83,9 +98,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
+    final onClose = widget.onClose ?? () => Navigator.of(context).maybePop();
+
+    return Material(
+      color: Colors.white,
+      child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -99,10 +116,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     'sidebar',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
+                  IconButton(icon: const Icon(Icons.close), onPressed: onClose),
                 ],
               ),
             ),
@@ -127,10 +141,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   Text(
                     'آخر ترجماتك',
                     textDirection: TextDirection.rtl,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.white70),
                   ),
                 ],
               ),
@@ -168,8 +179,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.end,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
                                         record.title,
@@ -192,8 +202,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete_outline,
-                                      color: Color(0xFFE63950)),
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: Color(0xFFE63950),
+                                  ),
                                   onPressed: () => _deleteRecord(index),
                                 ),
                               ],
@@ -214,9 +226,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     minimumSize: const Size(double.infinity, 48),
                   ),
                   onPressed: _clearAllRecords,
-                  child: const Text('مسح السجل',
-                      textDirection: TextDirection.rtl,
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'مسح السجل',
+                    textDirection: TextDirection.rtl,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
           ],
@@ -317,10 +331,7 @@ class _OldRecordScreenState extends State<OldRecordScreen>
                   const Text(
                     'تفاصيل الترجمة',
                     textDirection: TextDirection.rtl,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.white70),
                   ),
                 ],
               ),
@@ -356,8 +367,9 @@ class _OldRecordScreenState extends State<OldRecordScreen>
                                     ? Icons.pause_circle
                                     : Icons.play_circle,
                                 size: 60,
-                                color: const Color(0xFF2DC9A0)
-                                    .withOpacity(_animationController.value),
+                                color: const Color(
+                                  0xFF2DC9A0,
+                                ).withOpacity(_animationController.value),
                               );
                             },
                           ),
@@ -491,10 +503,7 @@ class _OldRecordScreenState extends State<OldRecordScreen>
                   const Text(
                     'نص الصوت',
                     textDirection: TextDirection.rtl,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -523,10 +532,8 @@ class _WaveformPainter extends CustomPainter {
   final Animation<double> animation;
   final bool isPlaying;
 
-  _WaveformPainter({
-    required this.animation,
-    required this.isPlaying,
-  }) : super(repaint: animation);
+  _WaveformPainter({required this.animation, required this.isPlaying})
+    : super(repaint: animation);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -550,11 +557,10 @@ class _WaveformPainter extends CustomPainter {
       // Animate height based on playback state
       final animatedHeight = isPlaying
           ? baseHeight *
-              (0.5 +
-                  0.5 *
-                      (1 +
-                          ((i / numBars + animation.value * 2) % 2) -
-                          1).abs())
+                (0.5 +
+                    0.5 *
+                        (1 + ((i / numBars + animation.value * 2) % 2) - 1)
+                            .abs())
           : baseHeight * 0.3;
 
       canvas.drawLine(
