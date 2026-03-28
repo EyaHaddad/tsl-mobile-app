@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:tsl_mobile_app/core/routes/transition_routes.dart';
 
 class ResultScreen extends StatefulWidget {
   const ResultScreen({super.key});
@@ -16,17 +15,6 @@ class _ResultScreenState extends State<ResultScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // "Result" label
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: EdgeInsets.only(left: 16, top: 8),
-                child: Text(
-                  'Result',
-                  style: TextStyle(fontSize: 13, color: Colors.black54),
-                ),
-              ),
-            ),
             // Top Bar (green)
             Container(
               width: double.infinity,
@@ -35,15 +23,6 @@ class _ResultScreenState extends State<ResultScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Back arrow
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
                   // Title + emoji
                   const Row(
                     children: [
@@ -58,6 +37,17 @@ class _ResultScreenState extends State<ResultScreen> {
                       SizedBox(width: 6),
                       Text('✨', style: TextStyle(fontSize: 18)),
                     ],
+                  ),
+                  // Back arrow (to Home)
+                  GestureDetector(
+                    onTap: () => Navigator.of(
+                      context,
+                    ).popUntil((route) => route.isFirst),
+                    child: const Icon(
+                      Icons.arrow_forward,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
                 ],
               ),
@@ -126,10 +116,7 @@ class _ResultScreenState extends State<ResultScreen> {
                     height: 52,
                     child: ElevatedButton.icon(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.refresh,
-                        color: Colors.white,
-                      ),
+                      icon: const Icon(Icons.refresh, color: Colors.white),
                       label: const Text(
                         'تسجيل مجدداً',
                         style: TextStyle(
