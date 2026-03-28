@@ -34,7 +34,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  # camera: ^0.9.8+1  # Disabled for web/mobile-specific
+  camera: ^0.11.0+2
   # tflite_flutter: ^0.9.0  # Mobile-only
   # tflite_flutter_helper: ^0.3.1  # Mobile-only
   # flutter_tts: ^3.8.0  # Mobile-only
@@ -86,6 +86,7 @@ flutter:
 
   assets:
     - assets/icons/mint_hand.svg
+    - assets/icons/camera_flip.svg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:tsl_mobile_app/core/constants/app_strings.dart';
+import 'package:flutter/foundation.dart';
+import 'package:camera/camera.dart';
 import 'package:tsl_mobile_app/core/constants/app_dimensions.dart';
 import 'package:tsl_mobile_app/core/theme/app_colors.dart';
 import 'package:tsl_mobile_app/features/recognition/screens/result_screen.dart';
@@ -15,8 +16,11 @@ class CameraScreenWeb extends StatefulWidget {
 class _CameraScreenWebState extends State<CameraScreenWeb>
     with TickerProviderStateMixin {
   late AnimationController _pulseController;
+
+  CameraController? _controller;
+  Future<void>? _initializeControllerFuture;
+
   bool _isRecording = false;
-  int _recordingDuration = 0;
 
   @override
   void initState() {
@@ -25,30 +29,169 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat();
+
+    if (kIsWeb) {
+      _initializeControllerFuture = _initCamera();
+    }
+  }
+
+  Future<void> _initCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        return;
+      }
+
+      final controller = CameraController(
+        cameras.first,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+
+      _controller = controller;
+      await controller.initialize();
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (_) {
+      // Keep UI fallback; errors can happen on denied permissions / no device.
+    }
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
-  void _startRecording() {
-    setState(() {
-      _isRecording = true;
-      _recordingDuration = 0;
-    });
+  Future<void> _startRecording() async {
+    if (!kIsWeb) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الكاميرا غير مدعومة في هذا الوضع')),
+      );
+      return;
+    }
+
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تعذر تشغيل الكاميرا')));
+      return;
+    }
+
+    try {
+      await controller.startVideoRecording();
+      if (!mounted) return;
+      setState(() {
+        _isRecording = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تعذر بدء التسجيل')));
+    }
   }
 
-  void _endRecording() {
+  Future<void> _endRecording() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      if (!mounted) return;
+      Navigator.of(
+        context,
+      ).push(FadeSlidePageRoute(page: const ResultScreen()));
+      return;
+    }
+
+    try {
+      if (_isRecording) {
+        await controller.stopVideoRecording();
+      }
+    } catch (_) {
+      // If stop fails, still navigate (recognition demo can proceed).
+    }
+
+    if (!mounted) return;
     setState(() {
       _isRecording = false;
     });
-    // Navigate to result screen
-    Navigator.of(context).push(
-      FadeSlidePageRoute(
-        child: const ResultScreen(),
-      ),
+
+    Navigator.of(context).push(FadeSlidePageRoute(page: const ResultScreen()));
+  }
+
+  Widget _buildCircularPreview() {
+    final controller = _controller;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final ringSize = (constraints.maxWidth * 0.6).clamp(200.0, 260.0);
+        final previewSize = ringSize * 0.75;
+
+        Widget previewChild;
+        if (!kIsWeb) {
+          previewChild = const Icon(
+            Icons.camera_alt,
+            size: 80,
+            color: AppColors.primary,
+          );
+        } else if (controller == null || !controller.value.isInitialized) {
+          previewChild = const SizedBox(
+            width: 32,
+            height: 32,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: AppColors.primary,
+            ),
+          );
+        } else {
+          previewChild = FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: previewSize,
+              height: previewSize / controller.value.aspectRatio,
+              child: CameraPreview(controller),
+            ),
+          );
+        }
+
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            if (_isRecording)
+              ScaleTransition(
+                scale: Tween<double>(
+                  begin: 0.8,
+                  end: 1.2,
+                ).animate(_pulseController),
+                child: Container(
+                  width: ringSize,
+                  height: ringSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+            Container(
+              width: previewSize,
+              height: previewSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withOpacity(0.1),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ClipOval(child: Center(child: previewChild)),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -65,15 +208,18 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
               color: AppColors.error,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.fiber_manual_record,
-                color: AppColors.white, size: 20),
+            child: const Icon(
+              Icons.fiber_manual_record,
+              color: AppColors.white,
+              size: 20,
+            ),
           ),
         ),
         title: Text(
           'تسجيل',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppColors.white,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(color: AppColors.white),
         ),
         centerTitle: true,
         elevation: 0,
@@ -97,50 +243,22 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
 
                 // Camera Status Text
                 Text(
-                  'الكاميرا قيد التشغيل',
+                  (kIsWeb && (_controller?.value.isInitialized ?? false))
+                      ? 'الكاميرا قيد التشغيل'
+                      : 'جاري تشغيل الكاميرا...',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.grey,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    color: AppColors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: AppDimensions.spacingLarge),
 
-                // Camera Icon with pulse animation
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Pulse ring
-                    if (_isRecording)
-                      ScaleTransition(
-                        scale: Tween<double>(begin: 0.8, end: 1.2)
-                            .animate(_pulseController),
-                        child: Container(
-                          width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.primary.withOpacity(0.3),
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                      ),
-                    // Camera icon
-                    Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.primary.withOpacity(0.1),
-                      ),
-                      child: Icon(
-                        Icons.camera_alt,
-                        size: 80,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
+                // Camera preview with pulse animation
+                FutureBuilder<void>(
+                  future: _initializeControllerFuture,
+                  builder: (context, snapshot) {
+                    return _buildCircularPreview();
+                  },
                 ),
                 const SizedBox(height: AppDimensions.spacingXLarge),
 
@@ -149,8 +267,9 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
                   padding: const EdgeInsets.all(AppDimensions.paddingMedium),
                   decoration: BoxDecoration(
                     color: AppColors.white,
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusLarge),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusLarge,
+                    ),
                     border: Border.all(
                       color: AppColors.primary.withOpacity(0.2),
                     ),
@@ -168,9 +287,7 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
                           const SizedBox(width: 8),
                           Text(
                             'إشارة مشيرة',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
+                            style: Theme.of(context).textTheme.titleSmall
                                 ?.copyWith(
                                   color: AppColors.warning,
                                   fontWeight: FontWeight.bold,
@@ -182,11 +299,10 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
                       Text(
                         'كيف حالك اليوم؟',
                         textAlign: TextAlign.center,
-                        style:
-                            Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  color: AppColors.black,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.black,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -198,9 +314,9 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
                   Text(
                     'جاري التسجيل...',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.error,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: AppColors.error,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 const SizedBox(height: AppDimensions.spacingXLarge),
 
@@ -221,9 +337,7 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
                           const SizedBox(width: 8),
                           Text(
                             'إنهاء التسجيل',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyLarge
+                            style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(color: AppColors.white),
                           ),
                         ],
@@ -243,9 +357,7 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
                           const SizedBox(width: 8),
                           Text(
                             'ابدأ التسجيل',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyLarge
+                            style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(color: AppColors.white),
                           ),
                         ],
