@@ -7,7 +7,16 @@ class Record {
   final String date;
   final String audioText;
 
-  Record({required this.title, required this.date, required this.audioText});
+  final int createdIndex;
+  bool isFavorite;
+
+  Record({
+    required this.title,
+    required this.date,
+    required this.audioText,
+    required this.createdIndex,
+    this.isFavorite = false,
+  });
 }
 
 // Full-screen wrapper (keeps HistoryScreen reusable inside a drawer)
@@ -36,6 +45,25 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   late List<Record> records;
 
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+  static const Duration _listAnimDuration = Duration(milliseconds: 220);
+
+  int _compareRecords(Record a, Record b) {
+    if (a.isFavorite != b.isFavorite) {
+      return a.isFavorite ? -1 : 1;
+    }
+    return a.createdIndex.compareTo(b.createdIndex);
+  }
+
+  int _insertionIndexFor(Record record, List<Record> list) {
+    for (int i = 0; i < list.length; i++) {
+      if (_compareRecords(record, list[i]) < 0) {
+        return i;
+      }
+    }
+    return list.length;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -46,29 +74,104 @@ class _HistoryScreenState extends State<HistoryScreen> {
         date: 'اليوم',
         audioText:
             'هذا هو النص المكتشف من الإشارة الأولى. يمكن تحويله إلى صوت.',
+        createdIndex: 0,
       ),
       Record(
         title: 'شكراً',
         date: 'أمس',
         audioText: 'النص الثاني المتعلق بإشارة الشكر.',
+        createdIndex: 1,
       ),
       Record(
         title: 'نعم',
         date: '3 أيام',
         audioText: 'إشارة توضيحية للقبول والموافقة.',
+        createdIndex: 2,
       ),
       Record(
         title: 'لا',
         date: 'أسبوع',
         audioText: 'نص يعبر عن الرفض أو عدم الموافقة.',
+        createdIndex: 3,
       ),
     ];
+
+    records.sort(_compareRecords);
   }
 
-  void _deleteRecord(int index) {
+  Widget _favoriteIcon({required bool isFavorite}) {
+    if (!isFavorite) {
+      return const Icon(
+        Icons.star_border,
+        key: ValueKey('not-favorite'),
+        color: Colors.black,
+      );
+    }
+
+    return Stack(
+      key: const ValueKey('favorite'),
+      alignment: Alignment.center,
+      children: const [
+        Icon(Icons.star_border, color: Colors.black),
+        Icon(Icons.star, color: Colors.amber),
+      ],
+    );
+  }
+
+  void _toggleFavorite(Record record) {
+    final fromIndex = records.indexOf(record);
+    if (fromIndex < 0) return;
+
+    final listState = _listKey.currentState;
+    if (listState == null) {
+      setState(() {
+        record.isFavorite = !record.isFavorite;
+        records.sort(_compareRecords);
+      });
+      return;
+    }
+
+    setState(() {
+      record.isFavorite = !record.isFavorite;
+      records.removeAt(fromIndex);
+    });
+
+    listState.removeItem(
+      fromIndex,
+      (context, animation) => _buildAnimatedRecordItem(record, animation),
+      duration: _listAnimDuration,
+    );
+
+    final toIndex = _insertionIndexFor(record, records);
+
+    setState(() {
+      records.insert(toIndex, record);
+    });
+
+    listState.insertItem(toIndex, duration: _listAnimDuration);
+  }
+
+  void _deleteRecord(Record record) {
+    final index = records.indexOf(record);
+    if (index < 0) return;
+
+    final listState = _listKey.currentState;
+    if (listState == null) {
+      setState(() {
+        records.removeAt(index);
+      });
+      return;
+    }
+
     setState(() {
       records.removeAt(index);
     });
+
+    listState.removeItem(
+      index,
+      (context, animation) => _buildAnimatedRecordItem(record, animation),
+      duration: _listAnimDuration,
+    );
   }
 
   void _clearAllRecords() {
@@ -85,13 +188,114 @@ class _HistoryScreenState extends State<HistoryScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              setState(() {
-                records.clear();
-              });
+              final listState = _listKey.currentState;
+              if (listState == null) {
+                setState(() {
+                  records.clear();
+                });
+                return;
+              }
+
+              for (int i = records.length - 1; i >= 0; i--) {
+                final removed = records.removeAt(i);
+                listState.removeItem(
+                  i,
+                  (context, animation) =>
+                      _buildAnimatedRecordItem(removed, animation),
+                  duration: _listAnimDuration,
+                );
+              }
+
+              setState(() {});
             },
             child: const Text('مسح الكل'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAnimatedRecordItem(Record record, Animation<double> animation) {
+    final curved = CurvedAnimation(parent: animation, curve: Curves.easeInOut);
+
+    return SizeTransition(
+      sizeFactor: curved,
+      child: FadeTransition(
+        opacity: curved,
+        child: InkWell(
+          key: ValueKey(record.createdIndex),
+          onTap: () {
+            Navigator.of(
+              context,
+            ).push(FadeSlidePageRoute(page: OldRecordScreen(record: record)));
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                  onPressed: () => _toggleFavorite(record),
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 160),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (child, anim) {
+                      return FadeTransition(
+                        opacity: anim,
+                        child: ScaleTransition(scale: anim, child: child),
+                      );
+                    },
+                    child: _favoriteIcon(isFavorite: record.isFavorite),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          record.title,
+                          textDirection: TextDirection.rtl,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          record.date,
+                          textDirection: TextDirection.rtl,
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Color(0xFFE63950),
+                  ),
+                  onPressed: () => _deleteRecord(record),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -160,62 +364,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         style: TextStyle(color: Colors.grey.shade600),
                       ),
                     )
-                  : ListView.builder(
-                      itemCount: records.length,
-                      itemBuilder: (context, index) {
+                  : AnimatedList(
+                      key: _listKey,
+                      initialItemCount: records.length,
+                      itemBuilder: (context, index, animation) {
                         final record = records[index];
-                        return InkWell(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              FadeSlidePageRoute(
-                                page: OldRecordScreen(record: record),
-                              ),
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              textDirection: TextDirection.rtl,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        record.title,
-                                        textDirection: TextDirection.rtl,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        record.date,
-                                        textDirection: TextDirection.rtl,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    color: Color(0xFFE63950),
-                                  ),
-                                  onPressed: () => _deleteRecord(index),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
+                        return _buildAnimatedRecordItem(record, animation);
                       },
                     ),
             ),
