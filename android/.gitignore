@@ -4,6 +4,11 @@ gradle-wrapper.jar
 /gradlew
 /gradlew.bat
 /local.properties
+/app/local.properties
+/app/.gradle
+/app/debug
+/app/profile
+/app/release
 GeneratedPluginRegistrant.java
 .cxx/
 

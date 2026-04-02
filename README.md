@@ -102,3 +102,5 @@ flutter run
 For first-time Flutter setup and platform requirements, see the official docs:
 
 - [Flutter documentation](https://docs.flutter.dev/)
+
+Note: The .gitignore files are harmonized to keep platform-specific generated artifacts out of version control while avoiding redundant rules.
