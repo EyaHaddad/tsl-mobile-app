@@ -111,7 +111,7 @@
     },
     {
       "name": "flutter_plugin_android_lifecycle",
-      "rootUri": "file:///C:/Users/Administrator/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33",
+      "rootUri": "file:///C:/Users/Administrator/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.34",
       "packageUri": "lib/",
       "languageVersion": "3.9"
     },
@@ -201,7 +201,7 @@
     },
     {
       "name": "path_provider_android",
-      "rootUri": "file:///C:/Users/Administrator/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider_android-2.2.22",
+      "rootUri": "file:///C:/Users/Administrator/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider_android-2.2.23",
       "packageUri": "lib/",
       "languageVersion": "3.9"
     },
