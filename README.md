@@ -1,106 +1,113 @@
 # tsl_mobile_app
 
-A Flutter mobile application using camera capture, on-device TensorFlow Lite inference, speech synthesis, and permission management.
+Flutter mobile app for Tunisian sign language recognition with on-device inference, local history persistence, and text to speech playback
 
-## Dependencies
+## Current Stack
 
-The following packages are currently installed:
+- camera
+- tflite_flutter
+- tflite_flutter_helper
+- flutter_tts
+- permission_handler
+- shared_preferences
+- isar
+- isar_flutter_libs
+- freezed and json_serializable
+- flutter_svg
+- intl
 
-- `camera: ^0.9.8+1` : Accesses device cameras for image capture and stream handling.
-- `tflite_flutter: ^0.9.0` : Runs TensorFlow Lite models on-device.
-- `tflite_flutter_helper: ^0.3.1` : Provides preprocessing/postprocessing utilities for TFLite inputs and outputs.
-- `flutter_tts: ^3.8.0` : Converts text to speech on mobile platforms.
-- `provider: ^6.0.0` : Lightweight state management and dependency injection.
-- `permission_handler: ^11.0.0` : Requests and checks runtime permissions.
-- `path_provider: ^2.0.15` : Gets platform-specific filesystem paths (documents, temp, cache).
-- `cupertino_icons: ^1.0.8` : iOS-style icon set for Flutter widgets.
+## Main Features
+
+- Camera capture flow for recognition
+- On-device TensorFlow Lite inference
+- Local history saved in Isar
+- Favorites support in history
+- Auto-delete for expired non-favorite records based on settings
+- On-demand text to speech from result and history detail screens
+- Persistent storage settings with SharedPreferences
 
 ## Project Structure
 
-The application follows a feature-based architecture, ensuring modularity, scalability, and maintainability.
-
 ```text
 lib/
-│
 ├── main.dart
-│
 ├── core/
-│   ├── utils/
 │   ├── constants/
-│
+│   ├── database/
+│   │   └── isar_service.dart
+│   ├── routes/
+│   ├── services/
+│   │   ├── history_retention_service.dart
+│   │   └── text_to_speech_service.dart
+│   ├── theme/
+│   └── utils/
 ├── features/
-│
 │   ├── camera/
-│   │   ├── camera_service.dart
-│   │   ├── camera_screen.dart
-│
-│   ├── recognition/
-│   │   ├── models/
-│   │   │     └── gesture_model.dart
-│   │   ├── services/
-│   │   │     ├── mediapipe_service.dart
-│   │   │     ├── tflite_service.dart
-│   │   │     ├── inference_service.dart
-│   │   ├── managers/
-│   │   │     └── sequence_manager.dart
-│
 │   ├── history/
 │   │   ├── models/
-│   │   │     └── history_item.dart
-│   │   ├── services/
-│   │   │     └── history_storage.dart
+│   │   │   └── history_record.dart
 │   │   ├── screens/
-│   │   │     └── history_screen.dart
-│
-│   ├── settings/
-│   │   ├── models/
-│   │   │     └── settings_model.dart
-│   │   ├── screens/
-│   │   │     └── settings_screen.dart
-│
+│   │   │   ├── history_screen.dart
+│   │   │   └── item_history_screen.dart
+│   │   └── services/
+│   │       └── history_storage.dart
 │   ├── home/
-│   │   └── home_screen.dart
-│
-├── shared/
-│   ├── widgets/
-│   ├── providers/
+│   ├── recognition/
+│   │   ├── managers/
+│   │   ├── models/
+│   │   ├── screens/
+│   │   │   └── result_screen.dart
+│   │   └── services/
+│   └── settings/
+│       ├── models/
+│       │   └── settings_model.dart
+│       ├── screens/
+│       │   └── settings_screen.dart
+│       └── services/
+│           └── settings_service.dart
+└── shared/
+	├── providers/
+	└── widgets/
 ```
 
-## Processing Pipeline
+## Recognition Pipeline
 
-The gesture recognition follows this pipeline:
+Camera -> MediaPipe landmarks -> sequence buffer -> LSTM inference -> predicted text
 
-- `Camera → MediaPipe → Landmarks → Sequence Buffer → LSTM → Prediction`
+## Audio Behavior
 
-1. The camera captures real-time frames.
-2. MediaPipe extracts hand landmarks.
-3. A sequence of frames is stored.
-4. The LSTM model processes the sequence.
-5. The prediction is displayed and stored in the history.
+- Audio is practical and on-demand
+- User taps play or convert to voice to run TTS
+- Language, rate, and pitch are loaded from saved settings
 
-## Key Features
+## History Retention Rules
 
-- Real-time sign language recognition
-- Fully offline processing
-- Local history storage
-- User settings customization
+- Favorites are persistent
+- Non-favorite records can be removed automatically when expired
+- Auto-delete and retention duration are managed in settings
 
 ## Getting Started
 
-Install packages:
+Install dependencies
 
 ```bash
 flutter pub get
 ```
 
-Run the app:
+Run the app
 
 ```bash
 flutter run
 ```
 
-For first-time Flutter setup and platform requirements, see the official docs:
+Run static analysis
 
-- [Flutter documentation](https://docs.flutter.dev/)
+```bash
+flutter analyze
+```
 
-Note: The .gitignore files are harmonized to keep platform-specific generated artifacts out of version control while avoiding redundant rules.
+Run tests
+
+```bash
+flutter test
+```

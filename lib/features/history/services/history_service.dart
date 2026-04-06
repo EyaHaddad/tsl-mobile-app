@@ -8,7 +8,7 @@ class HistoryService {
 
   HistoryService(this._prefs);
 
-  /// Get all history items
+  // Get all history items
   Future<List<HistoryItem>> getHistory() async {
     try {
       final jsonString = _prefs.getString(_storageKey);
@@ -26,7 +26,7 @@ class HistoryService {
     }
   }
 
-  /// Add a new history item
+  // Add a new history item
   Future<void> addHistoryItem(HistoryItem item) async {
     try {
       final currentHistory = await getHistory();
@@ -44,7 +44,7 @@ class HistoryService {
     }
   }
 
-  /// Delete a history item by ID
+  // Delete a history item by ID
   Future<void> deleteHistoryItem(String id) async {
     try {
       final currentHistory = await getHistory();
@@ -57,7 +57,7 @@ class HistoryService {
     }
   }
 
-  /// Clear all history
+  // Clear all history
   Future<void> clearHistory() async {
     try {
       await _prefs.remove(_storageKey);
@@ -66,7 +66,7 @@ class HistoryService {
     }
   }
 
-  /// Get history items by date range
+  // Get history items by date range
   Future<List<HistoryItem>> getHistoryByDateRange(
       DateTime start, DateTime end) async {
     try {
@@ -81,7 +81,7 @@ class HistoryService {
     }
   }
 
-  /// Search history items
+  // Search history items
   Future<List<HistoryItem>> searchHistory(String query) async {
     try {
       final history = await getHistory();

@@ -18,6 +18,9 @@ _$AppSettingsImpl _$$AppSettingsImplFromJson(Map<String, dynamic> json) =>
       sequenceLength: (json['sequenceLength'] as num?)?.toInt() ?? 30,
       confidenceThreshold:
           (json['confidenceThreshold'] as num?)?.toDouble() ?? 0.7,
+      autoDeleteEnabled: json['autoDeleteEnabled'] as bool? ?? true,
+      retentionDays: (json['retentionDays'] as num?)?.toInt() ?? 7,
+      persistAudioFiles: json['persistAudioFiles'] as bool? ?? false,
       isDarkMode: json['isDarkMode'] as bool? ?? false,
       showDebugInfo: json['showDebugInfo'] as bool? ?? true,
     );
@@ -33,6 +36,9 @@ Map<String, dynamic> _$$AppSettingsImplToJson(_$AppSettingsImpl instance) =>
       'cameraResolution': instance.cameraResolution,
       'sequenceLength': instance.sequenceLength,
       'confidenceThreshold': instance.confidenceThreshold,
+      'autoDeleteEnabled': instance.autoDeleteEnabled,
+      'retentionDays': instance.retentionDays,
+      'persistAudioFiles': instance.persistAudioFiles,
       'isDarkMode': instance.isDarkMode,
       'showDebugInfo': instance.showDebugInfo,
     };

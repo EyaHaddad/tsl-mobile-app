@@ -3,9 +3,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:tsl_mobile_app/core/theme/app_theme.dart';
 import 'package:tsl_mobile_app/core/constants/app_strings.dart';
 import 'package:tsl_mobile_app/core/routes/app_routes.dart';
+import 'package:tsl_mobile_app/core/database/isar_service.dart';
+import 'package:tsl_mobile_app/core/services/history_retention_service.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await IsarService.instance.init();
+  final retentionService = await HistoryRetentionService.create();
+  await retentionService.purgeExpiredIfEnabled();
   runApp(const MyApp());
 }
 

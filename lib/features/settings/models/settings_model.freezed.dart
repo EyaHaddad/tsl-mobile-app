@@ -12,8 +12,7 @@ part of 'settings_model.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 AppSettings _$AppSettingsFromJson(Map<String, dynamic> json) {
   return _AppSettings.fromJson(json);
@@ -33,15 +32,14 @@ mixin _$AppSettings {
   int get sequenceLength =>
       throw _privateConstructorUsedError; // frames to collect before inference
   double get confidenceThreshold => throw _privateConstructorUsedError;
+  bool get autoDeleteEnabled => throw _privateConstructorUsedError;
+  int get retentionDays => throw _privateConstructorUsedError;
+  bool get persistAudioFiles => throw _privateConstructorUsedError;
   bool get isDarkMode => throw _privateConstructorUsedError;
   bool get showDebugInfo => throw _privateConstructorUsedError;
 
-  /// Serializes this AppSettings to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of AppSettings
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   $AppSettingsCopyWith<AppSettings> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -49,23 +47,24 @@ mixin _$AppSettings {
 /// @nodoc
 abstract class $AppSettingsCopyWith<$Res> {
   factory $AppSettingsCopyWith(
-    AppSettings value,
-    $Res Function(AppSettings) then,
-  ) = _$AppSettingsCopyWithImpl<$Res, AppSettings>;
+          AppSettings value, $Res Function(AppSettings) then) =
+      _$AppSettingsCopyWithImpl<$Res, AppSettings>;
   @useResult
-  $Res call({
-    bool enableTTS,
-    double speechRate,
-    double voicePitch,
-    bool enableVibration,
-    bool enableSound,
-    String language,
-    String cameraResolution,
-    int sequenceLength,
-    double confidenceThreshold,
-    bool isDarkMode,
-    bool showDebugInfo,
-  });
+  $Res call(
+      {bool enableTTS,
+      double speechRate,
+      double voicePitch,
+      bool enableVibration,
+      bool enableSound,
+      String language,
+      String cameraResolution,
+      int sequenceLength,
+      double confidenceThreshold,
+      bool autoDeleteEnabled,
+      int retentionDays,
+      bool persistAudioFiles,
+      bool isDarkMode,
+      bool showDebugInfo});
 }
 
 /// @nodoc
@@ -78,8 +77,6 @@ class _$AppSettingsCopyWithImpl<$Res, $Val extends AppSettings>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of AppSettings
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -92,58 +89,70 @@ class _$AppSettingsCopyWithImpl<$Res, $Val extends AppSettings>
     Object? cameraResolution = null,
     Object? sequenceLength = null,
     Object? confidenceThreshold = null,
+    Object? autoDeleteEnabled = null,
+    Object? retentionDays = null,
+    Object? persistAudioFiles = null,
     Object? isDarkMode = null,
     Object? showDebugInfo = null,
   }) {
-    return _then(
-      _value.copyWith(
-            enableTTS: null == enableTTS
-                ? _value.enableTTS
-                : enableTTS // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            speechRate: null == speechRate
-                ? _value.speechRate
-                : speechRate // ignore: cast_nullable_to_non_nullable
-                      as double,
-            voicePitch: null == voicePitch
-                ? _value.voicePitch
-                : voicePitch // ignore: cast_nullable_to_non_nullable
-                      as double,
-            enableVibration: null == enableVibration
-                ? _value.enableVibration
-                : enableVibration // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            enableSound: null == enableSound
-                ? _value.enableSound
-                : enableSound // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            language: null == language
-                ? _value.language
-                : language // ignore: cast_nullable_to_non_nullable
-                      as String,
-            cameraResolution: null == cameraResolution
-                ? _value.cameraResolution
-                : cameraResolution // ignore: cast_nullable_to_non_nullable
-                      as String,
-            sequenceLength: null == sequenceLength
-                ? _value.sequenceLength
-                : sequenceLength // ignore: cast_nullable_to_non_nullable
-                      as int,
-            confidenceThreshold: null == confidenceThreshold
-                ? _value.confidenceThreshold
-                : confidenceThreshold // ignore: cast_nullable_to_non_nullable
-                      as double,
-            isDarkMode: null == isDarkMode
-                ? _value.isDarkMode
-                : isDarkMode // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            showDebugInfo: null == showDebugInfo
-                ? _value.showDebugInfo
-                : showDebugInfo // ignore: cast_nullable_to_non_nullable
-                      as bool,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      enableTTS: null == enableTTS
+          ? _value.enableTTS
+          : enableTTS // ignore: cast_nullable_to_non_nullable
+              as bool,
+      speechRate: null == speechRate
+          ? _value.speechRate
+          : speechRate // ignore: cast_nullable_to_non_nullable
+              as double,
+      voicePitch: null == voicePitch
+          ? _value.voicePitch
+          : voicePitch // ignore: cast_nullable_to_non_nullable
+              as double,
+      enableVibration: null == enableVibration
+          ? _value.enableVibration
+          : enableVibration // ignore: cast_nullable_to_non_nullable
+              as bool,
+      enableSound: null == enableSound
+          ? _value.enableSound
+          : enableSound // ignore: cast_nullable_to_non_nullable
+              as bool,
+      language: null == language
+          ? _value.language
+          : language // ignore: cast_nullable_to_non_nullable
+              as String,
+      cameraResolution: null == cameraResolution
+          ? _value.cameraResolution
+          : cameraResolution // ignore: cast_nullable_to_non_nullable
+              as String,
+      sequenceLength: null == sequenceLength
+          ? _value.sequenceLength
+          : sequenceLength // ignore: cast_nullable_to_non_nullable
+              as int,
+      confidenceThreshold: null == confidenceThreshold
+          ? _value.confidenceThreshold
+          : confidenceThreshold // ignore: cast_nullable_to_non_nullable
+              as double,
+      autoDeleteEnabled: null == autoDeleteEnabled
+          ? _value.autoDeleteEnabled
+          : autoDeleteEnabled // ignore: cast_nullable_to_non_nullable
+              as bool,
+      retentionDays: null == retentionDays
+          ? _value.retentionDays
+          : retentionDays // ignore: cast_nullable_to_non_nullable
+              as int,
+      persistAudioFiles: null == persistAudioFiles
+          ? _value.persistAudioFiles
+          : persistAudioFiles // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isDarkMode: null == isDarkMode
+          ? _value.isDarkMode
+          : isDarkMode // ignore: cast_nullable_to_non_nullable
+              as bool,
+      showDebugInfo: null == showDebugInfo
+          ? _value.showDebugInfo
+          : showDebugInfo // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ) as $Val);
   }
 }
 
@@ -151,24 +160,25 @@ class _$AppSettingsCopyWithImpl<$Res, $Val extends AppSettings>
 abstract class _$$AppSettingsImplCopyWith<$Res>
     implements $AppSettingsCopyWith<$Res> {
   factory _$$AppSettingsImplCopyWith(
-    _$AppSettingsImpl value,
-    $Res Function(_$AppSettingsImpl) then,
-  ) = __$$AppSettingsImplCopyWithImpl<$Res>;
+          _$AppSettingsImpl value, $Res Function(_$AppSettingsImpl) then) =
+      __$$AppSettingsImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    bool enableTTS,
-    double speechRate,
-    double voicePitch,
-    bool enableVibration,
-    bool enableSound,
-    String language,
-    String cameraResolution,
-    int sequenceLength,
-    double confidenceThreshold,
-    bool isDarkMode,
-    bool showDebugInfo,
-  });
+  $Res call(
+      {bool enableTTS,
+      double speechRate,
+      double voicePitch,
+      bool enableVibration,
+      bool enableSound,
+      String language,
+      String cameraResolution,
+      int sequenceLength,
+      double confidenceThreshold,
+      bool autoDeleteEnabled,
+      int retentionDays,
+      bool persistAudioFiles,
+      bool isDarkMode,
+      bool showDebugInfo});
 }
 
 /// @nodoc
@@ -176,12 +186,9 @@ class __$$AppSettingsImplCopyWithImpl<$Res>
     extends _$AppSettingsCopyWithImpl<$Res, _$AppSettingsImpl>
     implements _$$AppSettingsImplCopyWith<$Res> {
   __$$AppSettingsImplCopyWithImpl(
-    _$AppSettingsImpl _value,
-    $Res Function(_$AppSettingsImpl) _then,
-  ) : super(_value, _then);
+      _$AppSettingsImpl _value, $Res Function(_$AppSettingsImpl) _then)
+      : super(_value, _then);
 
-  /// Create a copy of AppSettings
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -194,76 +201,91 @@ class __$$AppSettingsImplCopyWithImpl<$Res>
     Object? cameraResolution = null,
     Object? sequenceLength = null,
     Object? confidenceThreshold = null,
+    Object? autoDeleteEnabled = null,
+    Object? retentionDays = null,
+    Object? persistAudioFiles = null,
     Object? isDarkMode = null,
     Object? showDebugInfo = null,
   }) {
-    return _then(
-      _$AppSettingsImpl(
-        enableTTS: null == enableTTS
-            ? _value.enableTTS
-            : enableTTS // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        speechRate: null == speechRate
-            ? _value.speechRate
-            : speechRate // ignore: cast_nullable_to_non_nullable
-                  as double,
-        voicePitch: null == voicePitch
-            ? _value.voicePitch
-            : voicePitch // ignore: cast_nullable_to_non_nullable
-                  as double,
-        enableVibration: null == enableVibration
-            ? _value.enableVibration
-            : enableVibration // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        enableSound: null == enableSound
-            ? _value.enableSound
-            : enableSound // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        language: null == language
-            ? _value.language
-            : language // ignore: cast_nullable_to_non_nullable
-                  as String,
-        cameraResolution: null == cameraResolution
-            ? _value.cameraResolution
-            : cameraResolution // ignore: cast_nullable_to_non_nullable
-                  as String,
-        sequenceLength: null == sequenceLength
-            ? _value.sequenceLength
-            : sequenceLength // ignore: cast_nullable_to_non_nullable
-                  as int,
-        confidenceThreshold: null == confidenceThreshold
-            ? _value.confidenceThreshold
-            : confidenceThreshold // ignore: cast_nullable_to_non_nullable
-                  as double,
-        isDarkMode: null == isDarkMode
-            ? _value.isDarkMode
-            : isDarkMode // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        showDebugInfo: null == showDebugInfo
-            ? _value.showDebugInfo
-            : showDebugInfo // ignore: cast_nullable_to_non_nullable
-                  as bool,
-      ),
-    );
+    return _then(_$AppSettingsImpl(
+      enableTTS: null == enableTTS
+          ? _value.enableTTS
+          : enableTTS // ignore: cast_nullable_to_non_nullable
+              as bool,
+      speechRate: null == speechRate
+          ? _value.speechRate
+          : speechRate // ignore: cast_nullable_to_non_nullable
+              as double,
+      voicePitch: null == voicePitch
+          ? _value.voicePitch
+          : voicePitch // ignore: cast_nullable_to_non_nullable
+              as double,
+      enableVibration: null == enableVibration
+          ? _value.enableVibration
+          : enableVibration // ignore: cast_nullable_to_non_nullable
+              as bool,
+      enableSound: null == enableSound
+          ? _value.enableSound
+          : enableSound // ignore: cast_nullable_to_non_nullable
+              as bool,
+      language: null == language
+          ? _value.language
+          : language // ignore: cast_nullable_to_non_nullable
+              as String,
+      cameraResolution: null == cameraResolution
+          ? _value.cameraResolution
+          : cameraResolution // ignore: cast_nullable_to_non_nullable
+              as String,
+      sequenceLength: null == sequenceLength
+          ? _value.sequenceLength
+          : sequenceLength // ignore: cast_nullable_to_non_nullable
+              as int,
+      confidenceThreshold: null == confidenceThreshold
+          ? _value.confidenceThreshold
+          : confidenceThreshold // ignore: cast_nullable_to_non_nullable
+              as double,
+      autoDeleteEnabled: null == autoDeleteEnabled
+          ? _value.autoDeleteEnabled
+          : autoDeleteEnabled // ignore: cast_nullable_to_non_nullable
+              as bool,
+      retentionDays: null == retentionDays
+          ? _value.retentionDays
+          : retentionDays // ignore: cast_nullable_to_non_nullable
+              as int,
+      persistAudioFiles: null == persistAudioFiles
+          ? _value.persistAudioFiles
+          : persistAudioFiles // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isDarkMode: null == isDarkMode
+          ? _value.isDarkMode
+          : isDarkMode // ignore: cast_nullable_to_non_nullable
+              as bool,
+      showDebugInfo: null == showDebugInfo
+          ? _value.showDebugInfo
+          : showDebugInfo // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$AppSettingsImpl implements _AppSettings {
-  const _$AppSettingsImpl({
-    this.enableTTS = false,
-    this.speechRate = 1.0,
-    this.voicePitch = 1.0,
-    this.enableVibration = true,
-    this.enableSound = true,
-    this.language = 'ar',
-    this.cameraResolution = 'high',
-    this.sequenceLength = 30,
-    this.confidenceThreshold = 0.7,
-    this.isDarkMode = false,
-    this.showDebugInfo = true,
-  });
+  const _$AppSettingsImpl(
+      {this.enableTTS = false,
+      this.speechRate = 1.0,
+      this.voicePitch = 1.0,
+      this.enableVibration = true,
+      this.enableSound = true,
+      this.language = 'ar',
+      this.cameraResolution = 'high',
+      this.sequenceLength = 30,
+      this.confidenceThreshold = 0.7,
+      this.autoDeleteEnabled = true,
+      this.retentionDays = 7,
+      this.persistAudioFiles = false,
+      this.isDarkMode = false,
+      this.showDebugInfo = true});
 
   factory _$AppSettingsImpl.fromJson(Map<String, dynamic> json) =>
       _$$AppSettingsImplFromJson(json);
@@ -286,18 +308,27 @@ class _$AppSettingsImpl implements _AppSettings {
   @override
   @JsonKey()
   final String language;
-  // 'ar' for Arabic, 'en' for English, 'fr' for French
+// 'ar' for Arabic, 'en' for English, 'fr' for French
   @override
   @JsonKey()
   final String cameraResolution;
-  // 'low', 'medium', 'high'
+// 'low', 'medium', 'high'
   @override
   @JsonKey()
   final int sequenceLength;
-  // frames to collect before inference
+// frames to collect before inference
   @override
   @JsonKey()
   final double confidenceThreshold;
+  @override
+  @JsonKey()
+  final bool autoDeleteEnabled;
+  @override
+  @JsonKey()
+  final int retentionDays;
+  @override
+  @JsonKey()
+  final bool persistAudioFiles;
   @override
   @JsonKey()
   final bool isDarkMode;
@@ -307,7 +338,7 @@ class _$AppSettingsImpl implements _AppSettings {
 
   @override
   String toString() {
-    return 'AppSettings(enableTTS: $enableTTS, speechRate: $speechRate, voicePitch: $voicePitch, enableVibration: $enableVibration, enableSound: $enableSound, language: $language, cameraResolution: $cameraResolution, sequenceLength: $sequenceLength, confidenceThreshold: $confidenceThreshold, isDarkMode: $isDarkMode, showDebugInfo: $showDebugInfo)';
+    return 'AppSettings(enableTTS: $enableTTS, speechRate: $speechRate, voicePitch: $voicePitch, enableVibration: $enableVibration, enableSound: $enableSound, language: $language, cameraResolution: $cameraResolution, sequenceLength: $sequenceLength, confidenceThreshold: $confidenceThreshold, autoDeleteEnabled: $autoDeleteEnabled, retentionDays: $retentionDays, persistAudioFiles: $persistAudioFiles, isDarkMode: $isDarkMode, showDebugInfo: $showDebugInfo)';
   }
 
   @override
@@ -333,32 +364,38 @@ class _$AppSettingsImpl implements _AppSettings {
                 other.sequenceLength == sequenceLength) &&
             (identical(other.confidenceThreshold, confidenceThreshold) ||
                 other.confidenceThreshold == confidenceThreshold) &&
+            (identical(other.autoDeleteEnabled, autoDeleteEnabled) ||
+                other.autoDeleteEnabled == autoDeleteEnabled) &&
+            (identical(other.retentionDays, retentionDays) ||
+                other.retentionDays == retentionDays) &&
+            (identical(other.persistAudioFiles, persistAudioFiles) ||
+                other.persistAudioFiles == persistAudioFiles) &&
             (identical(other.isDarkMode, isDarkMode) ||
                 other.isDarkMode == isDarkMode) &&
             (identical(other.showDebugInfo, showDebugInfo) ||
                 other.showDebugInfo == showDebugInfo));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    enableTTS,
-    speechRate,
-    voicePitch,
-    enableVibration,
-    enableSound,
-    language,
-    cameraResolution,
-    sequenceLength,
-    confidenceThreshold,
-    isDarkMode,
-    showDebugInfo,
-  );
+      runtimeType,
+      enableTTS,
+      speechRate,
+      voicePitch,
+      enableVibration,
+      enableSound,
+      language,
+      cameraResolution,
+      sequenceLength,
+      confidenceThreshold,
+      autoDeleteEnabled,
+      retentionDays,
+      persistAudioFiles,
+      isDarkMode,
+      showDebugInfo);
 
-  /// Create a copy of AppSettings
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$AppSettingsImplCopyWith<_$AppSettingsImpl> get copyWith =>
@@ -366,24 +403,28 @@ class _$AppSettingsImpl implements _AppSettings {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AppSettingsImplToJson(this);
+    return _$$AppSettingsImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _AppSettings implements AppSettings {
-  const factory _AppSettings({
-    final bool enableTTS,
-    final double speechRate,
-    final double voicePitch,
-    final bool enableVibration,
-    final bool enableSound,
-    final String language,
-    final String cameraResolution,
-    final int sequenceLength,
-    final double confidenceThreshold,
-    final bool isDarkMode,
-    final bool showDebugInfo,
-  }) = _$AppSettingsImpl;
+  const factory _AppSettings(
+      {final bool enableTTS,
+      final double speechRate,
+      final double voicePitch,
+      final bool enableVibration,
+      final bool enableSound,
+      final String language,
+      final String cameraResolution,
+      final int sequenceLength,
+      final double confidenceThreshold,
+      final bool autoDeleteEnabled,
+      final int retentionDays,
+      final bool persistAudioFiles,
+      final bool isDarkMode,
+      final bool showDebugInfo}) = _$AppSettingsImpl;
 
   factory _AppSettings.fromJson(Map<String, dynamic> json) =
       _$AppSettingsImpl.fromJson;
@@ -399,22 +440,25 @@ abstract class _AppSettings implements AppSettings {
   @override
   bool get enableSound;
   @override
-  String get language; // 'ar' for Arabic, 'en' for English, 'fr' for French
-  @override
-  String get cameraResolution; // 'low', 'medium', 'high'
-  @override
-  int get sequenceLength; // frames to collect before inference
-  @override
+  String get language;
+  @override // 'ar' for Arabic, 'en' for English, 'fr' for French
+  String get cameraResolution;
+  @override // 'low', 'medium', 'high'
+  int get sequenceLength;
+  @override // frames to collect before inference
   double get confidenceThreshold;
+  @override
+  bool get autoDeleteEnabled;
+  @override
+  int get retentionDays;
+  @override
+  bool get persistAudioFiles;
   @override
   bool get isDarkMode;
   @override
   bool get showDebugInfo;
-
-  /// Create a copy of AppSettings
-  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   _$$AppSettingsImplCopyWith<_$AppSettingsImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

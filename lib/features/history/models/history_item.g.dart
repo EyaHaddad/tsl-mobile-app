@@ -12,8 +12,7 @@ _$HistoryItemImpl _$$HistoryItemImplFromJson(Map<String, dynamic> json) =>
       recognizedText: json['recognizedText'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
       confidence: (json['confidence'] as num).toDouble(),
-      alternatives:
-          (json['alternatives'] as List<dynamic>?)
+      alternatives: (json['alternatives'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],

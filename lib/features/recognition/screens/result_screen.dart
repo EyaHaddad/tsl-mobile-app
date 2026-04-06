@@ -1,13 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:tsl_mobile_app/core/services/text_to_speech_service.dart';
+import 'package:tsl_mobile_app/features/settings/services/settings_service.dart';
 
 class ResultScreen extends StatefulWidget {
-  const ResultScreen({super.key});
+  const ResultScreen({
+    super.key,
+    this.recognizedText = ': تُجسّد إشاراتك معانيها',
+  });
+
+  final String recognizedText;
 
   @override
   State<ResultScreen> createState() => _ResultScreenState();
 }
 
 class _ResultScreenState extends State<ResultScreen> {
+  final TextToSpeechService _ttsService = TextToSpeechService.instance;
+  bool _isSpeaking = false;
+
+  Future<void> _speakResult() async {
+    try {
+      final settingsService = await SettingsService.create();
+      final settings = settingsService.getSettings();
+
+      await _ttsService.configure(
+        language: settings.language,
+        speechRate: settings.speechRate,
+        pitch: settings.voicePitch,
+      );
+
+      if (!mounted) return;
+      setState(() => _isSpeaking = true);
+      await _ttsService.speak(widget.recognizedText);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('TTS error: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _isSpeaking = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _ttsService.stop();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,12 +105,12 @@ class _ResultScreenState extends State<ResultScreen> {
                     border: Border.all(color: Colors.black26, width: 1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Align(
+                  child: Align(
                     alignment: Alignment.topRight,
                     child: Text(
-                      ': تُجسّد إشاراتك معانيها',
+                      widget.recognizedText,
                       textAlign: TextAlign.right,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         color: Colors.black87,
                         fontWeight: FontWeight.w600,
@@ -88,13 +130,13 @@ class _ResultScreenState extends State<ResultScreen> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: _isSpeaking ? null : _speakResult,
                       icon: const Icon(
                         Icons.volume_up_outlined,
                         color: Colors.white,
                       ),
-                      label: const Text(
-                        'تحويل إلى صوت',
+                      label: Text(
+                        _isSpeaking ? 'جاري التشغيل...' : 'تحويل إلى صوت',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 17,
