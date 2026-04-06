@@ -12,8 +12,7 @@ part of 'history_item.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 HistoryItem _$HistoryItemFromJson(Map<String, dynamic> json) {
   return _HistoryItem.fromJson(json);
@@ -29,12 +28,8 @@ mixin _$HistoryItem {
   String get imageUrl => throw _privateConstructorUsedError;
   int get duration => throw _privateConstructorUsedError;
 
-  /// Serializes this HistoryItem to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of HistoryItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   $HistoryItemCopyWith<HistoryItem> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -42,19 +37,17 @@ mixin _$HistoryItem {
 /// @nodoc
 abstract class $HistoryItemCopyWith<$Res> {
   factory $HistoryItemCopyWith(
-    HistoryItem value,
-    $Res Function(HistoryItem) then,
-  ) = _$HistoryItemCopyWithImpl<$Res, HistoryItem>;
+          HistoryItem value, $Res Function(HistoryItem) then) =
+      _$HistoryItemCopyWithImpl<$Res, HistoryItem>;
   @useResult
-  $Res call({
-    String id,
-    String recognizedText,
-    DateTime timestamp,
-    double confidence,
-    List<String> alternatives,
-    String imageUrl,
-    int duration,
-  });
+  $Res call(
+      {String id,
+      String recognizedText,
+      DateTime timestamp,
+      double confidence,
+      List<String> alternatives,
+      String imageUrl,
+      int duration});
 }
 
 /// @nodoc
@@ -67,8 +60,6 @@ class _$HistoryItemCopyWithImpl<$Res, $Val extends HistoryItem>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of HistoryItem
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -80,39 +71,36 @@ class _$HistoryItemCopyWithImpl<$Res, $Val extends HistoryItem>
     Object? imageUrl = null,
     Object? duration = null,
   }) {
-    return _then(
-      _value.copyWith(
-            id: null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            recognizedText: null == recognizedText
-                ? _value.recognizedText
-                : recognizedText // ignore: cast_nullable_to_non_nullable
-                      as String,
-            timestamp: null == timestamp
-                ? _value.timestamp
-                : timestamp // ignore: cast_nullable_to_non_nullable
-                      as DateTime,
-            confidence: null == confidence
-                ? _value.confidence
-                : confidence // ignore: cast_nullable_to_non_nullable
-                      as double,
-            alternatives: null == alternatives
-                ? _value.alternatives
-                : alternatives // ignore: cast_nullable_to_non_nullable
-                      as List<String>,
-            imageUrl: null == imageUrl
-                ? _value.imageUrl
-                : imageUrl // ignore: cast_nullable_to_non_nullable
-                      as String,
-            duration: null == duration
-                ? _value.duration
-                : duration // ignore: cast_nullable_to_non_nullable
-                      as int,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      recognizedText: null == recognizedText
+          ? _value.recognizedText
+          : recognizedText // ignore: cast_nullable_to_non_nullable
+              as String,
+      timestamp: null == timestamp
+          ? _value.timestamp
+          : timestamp // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      confidence: null == confidence
+          ? _value.confidence
+          : confidence // ignore: cast_nullable_to_non_nullable
+              as double,
+      alternatives: null == alternatives
+          ? _value.alternatives
+          : alternatives // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      imageUrl: null == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
+              as String,
+      duration: null == duration
+          ? _value.duration
+          : duration // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
   }
 }
 
@@ -120,20 +108,18 @@ class _$HistoryItemCopyWithImpl<$Res, $Val extends HistoryItem>
 abstract class _$$HistoryItemImplCopyWith<$Res>
     implements $HistoryItemCopyWith<$Res> {
   factory _$$HistoryItemImplCopyWith(
-    _$HistoryItemImpl value,
-    $Res Function(_$HistoryItemImpl) then,
-  ) = __$$HistoryItemImplCopyWithImpl<$Res>;
+          _$HistoryItemImpl value, $Res Function(_$HistoryItemImpl) then) =
+      __$$HistoryItemImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String id,
-    String recognizedText,
-    DateTime timestamp,
-    double confidence,
-    List<String> alternatives,
-    String imageUrl,
-    int duration,
-  });
+  $Res call(
+      {String id,
+      String recognizedText,
+      DateTime timestamp,
+      double confidence,
+      List<String> alternatives,
+      String imageUrl,
+      int duration});
 }
 
 /// @nodoc
@@ -141,12 +127,9 @@ class __$$HistoryItemImplCopyWithImpl<$Res>
     extends _$HistoryItemCopyWithImpl<$Res, _$HistoryItemImpl>
     implements _$$HistoryItemImplCopyWith<$Res> {
   __$$HistoryItemImplCopyWithImpl(
-    _$HistoryItemImpl _value,
-    $Res Function(_$HistoryItemImpl) _then,
-  ) : super(_value, _then);
+      _$HistoryItemImpl _value, $Res Function(_$HistoryItemImpl) _then)
+      : super(_value, _then);
 
-  /// Create a copy of HistoryItem
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -158,53 +141,51 @@ class __$$HistoryItemImplCopyWithImpl<$Res>
     Object? imageUrl = null,
     Object? duration = null,
   }) {
-    return _then(
-      _$HistoryItemImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        recognizedText: null == recognizedText
-            ? _value.recognizedText
-            : recognizedText // ignore: cast_nullable_to_non_nullable
-                  as String,
-        timestamp: null == timestamp
-            ? _value.timestamp
-            : timestamp // ignore: cast_nullable_to_non_nullable
-                  as DateTime,
-        confidence: null == confidence
-            ? _value.confidence
-            : confidence // ignore: cast_nullable_to_non_nullable
-                  as double,
-        alternatives: null == alternatives
-            ? _value._alternatives
-            : alternatives // ignore: cast_nullable_to_non_nullable
-                  as List<String>,
-        imageUrl: null == imageUrl
-            ? _value.imageUrl
-            : imageUrl // ignore: cast_nullable_to_non_nullable
-                  as String,
-        duration: null == duration
-            ? _value.duration
-            : duration // ignore: cast_nullable_to_non_nullable
-                  as int,
-      ),
-    );
+    return _then(_$HistoryItemImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      recognizedText: null == recognizedText
+          ? _value.recognizedText
+          : recognizedText // ignore: cast_nullable_to_non_nullable
+              as String,
+      timestamp: null == timestamp
+          ? _value.timestamp
+          : timestamp // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      confidence: null == confidence
+          ? _value.confidence
+          : confidence // ignore: cast_nullable_to_non_nullable
+              as double,
+      alternatives: null == alternatives
+          ? _value._alternatives
+          : alternatives // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      imageUrl: null == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
+              as String,
+      duration: null == duration
+          ? _value.duration
+          : duration // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$HistoryItemImpl implements _HistoryItem {
-  const _$HistoryItemImpl({
-    required this.id,
-    required this.recognizedText,
-    required this.timestamp,
-    required this.confidence,
-    final List<String> alternatives = const [],
-    this.imageUrl = '',
-    this.duration = 0,
-  }) : _alternatives = alternatives;
+  const _$HistoryItemImpl(
+      {required this.id,
+      required this.recognizedText,
+      required this.timestamp,
+      required this.confidence,
+      final List<String> alternatives = const [],
+      this.imageUrl = '',
+      this.duration = 0})
+      : _alternatives = alternatives;
 
   factory _$HistoryItemImpl.fromJson(Map<String, dynamic> json) =>
       _$$HistoryItemImplFromJson(json);
@@ -250,32 +231,27 @@ class _$HistoryItemImpl implements _HistoryItem {
                 other.timestamp == timestamp) &&
             (identical(other.confidence, confidence) ||
                 other.confidence == confidence) &&
-            const DeepCollectionEquality().equals(
-              other._alternatives,
-              _alternatives,
-            ) &&
+            const DeepCollectionEquality()
+                .equals(other._alternatives, _alternatives) &&
             (identical(other.imageUrl, imageUrl) ||
                 other.imageUrl == imageUrl) &&
             (identical(other.duration, duration) ||
                 other.duration == duration));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    id,
-    recognizedText,
-    timestamp,
-    confidence,
-    const DeepCollectionEquality().hash(_alternatives),
-    imageUrl,
-    duration,
-  );
+      runtimeType,
+      id,
+      recognizedText,
+      timestamp,
+      confidence,
+      const DeepCollectionEquality().hash(_alternatives),
+      imageUrl,
+      duration);
 
-  /// Create a copy of HistoryItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$HistoryItemImplCopyWith<_$HistoryItemImpl> get copyWith =>
@@ -283,20 +259,21 @@ class _$HistoryItemImpl implements _HistoryItem {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$HistoryItemImplToJson(this);
+    return _$$HistoryItemImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _HistoryItem implements HistoryItem {
-  const factory _HistoryItem({
-    required final String id,
-    required final String recognizedText,
-    required final DateTime timestamp,
-    required final double confidence,
-    final List<String> alternatives,
-    final String imageUrl,
-    final int duration,
-  }) = _$HistoryItemImpl;
+  const factory _HistoryItem(
+      {required final String id,
+      required final String recognizedText,
+      required final DateTime timestamp,
+      required final double confidence,
+      final List<String> alternatives,
+      final String imageUrl,
+      final int duration}) = _$HistoryItemImpl;
 
   factory _HistoryItem.fromJson(Map<String, dynamic> json) =
       _$HistoryItemImpl.fromJson;
@@ -315,11 +292,8 @@ abstract class _HistoryItem implements HistoryItem {
   String get imageUrl;
   @override
   int get duration;
-
-  /// Create a copy of HistoryItem
-  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   _$$HistoryItemImplCopyWith<_$HistoryItemImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

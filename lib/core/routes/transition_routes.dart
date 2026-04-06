@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Custom Page Route with slide transition animation
+// Custom Page Route with slide transition animation
 class SlidePageRoute extends PageRouteBuilder {
   final Widget page;
 
@@ -24,7 +24,7 @@ class SlidePageRoute extends PageRouteBuilder {
         );
 }
 
-/// Custom Page Route with fade transition animation
+// Custom Page Route with fade transition animation
 class FadePageRoute extends PageRouteBuilder {
   final Widget page;
 
@@ -38,7 +38,7 @@ class FadePageRoute extends PageRouteBuilder {
         );
 }
 
-/// Custom Page Route with scale transition animation
+// Custom Page Route with scale transition animation
 class ScalePageRoute extends PageRouteBuilder {
   final Widget page;
 
@@ -62,7 +62,7 @@ class ScalePageRoute extends PageRouteBuilder {
         );
 }
 
-/// Custom Page Route with combined fade and slide transition
+// Custom Page Route with combined fade and slide transition
 class FadeSlidePageRoute extends PageRouteBuilder {
   final Widget page;
 
@@ -92,9 +92,9 @@ class FadeSlidePageRoute extends PageRouteBuilder {
         );
 }
 
-/// Navigation helper class
+// Navigation helper class
 class NavigationHelper {
-  /// Navigate with slide transition (recommended for main flow)
+  // Navigate with slide transition (recommended for main flow)
   static Future<dynamic> navigateWithSlide(
     BuildContext context,
     Widget widget,
@@ -102,7 +102,7 @@ class NavigationHelper {
     return Navigator.of(context).push(SlidePageRoute(page: widget));
   }
 
-  /// Navigate with fade transition
+  // Navigate with fade transition
   static Future<dynamic> navigateWithFade(
     BuildContext context,
     Widget widget,
@@ -110,7 +110,7 @@ class NavigationHelper {
     return Navigator.of(context).push(FadePageRoute(page: widget));
   }
 
-  /// Navigate with scale transition
+  // Navigate with scale transition
   static Future<dynamic> navigateWithScale(
     BuildContext context,
     Widget widget,
@@ -118,7 +118,7 @@ class NavigationHelper {
     return Navigator.of(context).push(ScalePageRoute(page: widget));
   }
 
-  /// Navigate with fade and slide combination
+  // Navigate with fade and slide combination
   static Future<dynamic> navigateWithFadeSlide(
     BuildContext context,
     Widget widget,
@@ -126,7 +126,7 @@ class NavigationHelper {
     return Navigator.of(context).push(FadeSlidePageRoute(page: widget));
   }
 
-  /// Navigate named route with transition
+  // Navigate named route with transition
   static Future<dynamic> navigateNamedWithSlide(
     BuildContext context,
     String routeName,

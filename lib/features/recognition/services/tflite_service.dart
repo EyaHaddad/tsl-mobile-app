@@ -1,65 +1,93 @@
 import '../models/result_model.dart';
 
-/// TensorFlow Lite service for LSTM inference
-/// Noop implementation for web testing
+// Service TFLite (squelette)
 class TFLiteService {
-  bool _isInitialized = false;
+  static const String defaultMetadataAssetPath =
+      'assets/data/lstm_dataset_meta.json';
 
-  // Model mapping - would be populated from the actual model file
-  final Map<int, String> _gestureMap = {
-    0: 'مرحبا', // Hello
-    1: 'شكرا', // Thank you
-    2: 'نعم', // Yes
-    3: 'لا', // No
-    4: 'ساعد', // Help
-    // Add more gestures based on actual model
-  };
+  bool _isInitialized = false;
+  LstmDatasetMetadata? _metadata;
+  String? _modelPath;
 
   TFLiteService();
 
-  /// Initialize the TFLite interpreter
-  Future<void> initialize(String modelPath) async {
+  // Prépare le service
+  Future<void> initialize(
+    String modelPath, {
+    String metadataAssetPath = defaultMetadataAssetPath,
+  }) async {
+    _modelPath = modelPath;
+    _metadata = LstmDatasetMetadata.placeholder(sourcePath: metadataAssetPath);
     _isInitialized = true;
   }
 
-  /// Run inference on prepared landmarks
-  Future<RecognitionResultData> runInference(List<List<double>> landmarks) async {
-    if (landmarks.isEmpty) {
-      return RecognitionResultData(
-        primaryGesture: 'Unknown',
-        primaryGestureAr: 'غير معروف',
+  // Exécute l'inférence
+  Future<RecognitionResultData> runInference(
+    List<List<double>> sequence,
+  ) async {
+    if (!_isInitialized) {
+      return const RecognitionResultData(
+        primaryGesture: 'NotInitialized',
+        primaryGestureAr: 'غير مهيأ',
         primaryConfidence: 0.0,
+        debug: 'Service not initialized yet.',
       );
     }
 
-    // Return mock result for web testing
     return RecognitionResultData(
-      primaryGesture: 'Hello',
-      primaryGestureAr: 'مرحبا',
-      primaryConfidence: 0.85,
-      alternatives: [
-        AlternativeMatch(
-          gesture: 'Thank you',
-          gestureAr: 'شكرا',
-          confidence: 0.12,
-        ),
-        AlternativeMatch(
-          gesture: 'Yes',
-          gestureAr: 'نعم',
-          confidence: 0.03,
-        ),
-      ],
-      sequenceLength: landmarks.length,
+      primaryGesture: 'NotImplemented',
+      primaryGestureAr: 'غير مطبق',
+      primaryConfidence: 0.0,
+      sequenceLength: sequence.length,
+      debug:
+          'TFLite inference will be implemented when model is ready. Model path: ${_modelPath ?? 'unset'}',
     );
   }
 
-  /// Get gesture map (for reference)
-  Map<int, String> get gestureMap => Map.unmodifiable(_gestureMap);
-
-  /// Dispose resources
+  // Libère les ressources
   void dispose() {
     _isInitialized = false;
+    _metadata = null;
+    _modelPath = null;
   }
 
   bool get isInitialized => _isInitialized;
+  LstmDatasetMetadata? get metadata => _metadata;
+}
+
+// Metadata LSTM (squelette)
+// 
+// Cette classe définit le format attendu
+// Le vrai chargement/parsing sera ajouté plus tard
+class LstmDatasetMetadata {
+  final int seqLen;
+  final int numFeatures;
+  final List<String> classNames;
+  final List<String> landmarkCols;
+  final List<double> scalerMean;
+  final List<double> scalerScale;
+  final String sourcePath;
+
+  const LstmDatasetMetadata({
+    required this.seqLen,
+    required this.numFeatures,
+    required this.classNames,
+    required this.landmarkCols,
+    required this.scalerMean,
+    required this.scalerScale,
+    required this.sourcePath,
+  });
+
+  // Placeholder metadata used until real parser is implemented
+  factory LstmDatasetMetadata.placeholder({required String sourcePath}) {
+    return LstmDatasetMetadata(
+      seqLen: 10,
+      numFeatures: 126,
+      classNames: const [],
+      landmarkCols: const [],
+      scalerMean: const [],
+      scalerScale: const [],
+      sourcePath: sourcePath,
+    );
+  }
 }

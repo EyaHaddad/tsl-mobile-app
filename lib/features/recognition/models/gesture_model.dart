@@ -42,7 +42,7 @@ class RecognitionMatch with _$RecognitionMatch {
       _$RecognitionMatchFromJson(json);
 }
 
-/// Hand landmark data structure (21 landmarks per hand)
+// Hand landmark data structure (21 landmarks per hand)
 @freezed
 class HandLandmark with _$HandLandmark {
   const factory HandLandmark({

@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:tsl_mobile_app/core/database/isar_service.dart';
+import 'package:tsl_mobile_app/core/services/history_retention_service.dart';
+import 'package:tsl_mobile_app/features/history/services/history_storage.dart';
+import 'package:tsl_mobile_app/features/settings/services/settings_service.dart';
 
+// Storage settings screen with persistent preferences
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -8,8 +13,22 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  static const Map<String, int> _durationDaysMap = {
+    'أسبوع واحد': 7,
+    'أسبوعان': 14,
+    'شهر واحد': 30,
+    'ثلاثة أشهر': 90,
+    'ستة أشهر': 180,
+    'سنة كاملة': 365,
+    'للأبد': 0,
+  };
+
   String _selectedDuration = 'أسبوع واحد';
   bool _autoDelete = false;
+  bool _persistAudioFiles = false;
+  bool _isLoading = true;
+
+  SettingsService? _settingsService;
 
   final List<String> _durations = [
     'أسبوع واحد',
@@ -21,6 +40,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'للأبد',
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final service = await SettingsService.create();
+    final settings = service.getSettings();
+    if (!mounted) return;
+
+    setState(() {
+      _settingsService = service;
+      _autoDelete = settings.autoDeleteEnabled;
+      _persistAudioFiles = settings.persistAudioFiles;
+      _selectedDuration = _durationFromDays(settings.retentionDays);
+      _isLoading = false;
+    });
+  }
+
+  String _durationFromDays(int days) {
+    for (final entry in _durationDaysMap.entries) {
+      if (entry.value == days) {
+        return entry.key;
+      }
+    }
+    return 'أسبوع واحد';
+  }
+
+  Future<void> _saveStorageSettings() async {
+    final service = _settingsService;
+    if (service == null) return;
+
+    final retentionDays = _durationDaysMap[_selectedDuration] ?? 7;
+    await service.updateSetting((current) {
+      return current.copyWith(
+        autoDeleteEnabled: _autoDelete,
+        retentionDays: retentionDays,
+        persistAudioFiles: _persistAudioFiles,
+      );
+    });
+
+    final retentionService = HistoryRetentionService(
+      HistoryStorage(IsarService.instance),
+      service,
+    );
+    await retentionService.purgeExpiredIfEnabled();
+  }
+
+  // Opens a picker to select retention duration
   void _showDurationPicker() {
     showModalBottomSheet(
       context: context,
@@ -53,7 +122,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const Divider(height: 0),
               // Duration list
-              Expanded(
+              SizedBox(
+                height: 320,
                 child: ListView.builder(
                   itemCount: _durations.length,
                   itemBuilder: (context, index) {
@@ -62,6 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         setState(() {
                           _selectedDuration = _durations[index];
                         });
+                        _saveStorageSettings();
                         Navigator.pop(context);
                       },
                       child: Padding(
@@ -105,6 +176,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -229,7 +307,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         borderRadius: BorderRadius.circular(6),
                         color: _autoDelete
-                            ? const Color(0xFF2DC9A0).withOpacity(0.1)
+                            ? const Color(0xFF2DC9A0).withValues(alpha: 0.1)
                             : Colors.transparent,
                       ),
                       child: Row(
@@ -251,8 +329,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               setState(() {
                                 _autoDelete = value;
                               });
+                              _saveStorageSettings();
                             },
-                            activeColor: const Color(0xFF2DC9A0),
+                            activeThumbColor: const Color(0xFF2DC9A0),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'حفظ الصوت',
+                      textDirection: TextDirection.rtl,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: _persistAudioFiles
+                              ? const Color(0xFF2DC9A0)
+                              : Colors.grey.shade300,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                        color: _persistAudioFiles
+                            ? const Color(0xFF2DC9A0).withValues(alpha: 0.1)
+                            : Colors.transparent,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _persistAudioFiles ? 'مفعّل' : 'معطّل',
+                            textDirection: TextDirection.rtl,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: _persistAudioFiles
+                                  ? const Color(0xFF2DC9A0)
+                                  : Colors.grey,
+                            ),
+                          ),
+                          Switch(
+                            value: _persistAudioFiles,
+                            onChanged: (value) {
+                              setState(() {
+                                _persistAudioFiles = value;
+                              });
+                              _saveStorageSettings();
+                            },
+                            activeThumbColor: const Color(0xFF2DC9A0),
                           ),
                         ],
                       ),

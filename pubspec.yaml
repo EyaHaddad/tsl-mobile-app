@@ -41,6 +41,10 @@ dependencies:
   provider: ^6.0.0
   permission_handler: ^11.0.0
   path_provider: ^2.0.15
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+
+
   # Data models and serialization
   freezed_annotation: ^2.4.0
   json_annotation: ^4.8.0
@@ -69,6 +73,7 @@ dev_dependencies:
   
   # Code generation
   build_runner: ^2.3.0
+  isar_generator: ^3.1.0+1
   freezed: ^2.4.0
   json_serializable: ^6.7.0
 
@@ -86,6 +91,8 @@ flutter:
   assets:
     - assets/icons/mint_hand.svg
     - assets/icons/camera_flip.svg
+    - assets/data/lstm_dataset_meta.json
+
 
   # To add assets to your application, add an assets section, like this:
   # assets:

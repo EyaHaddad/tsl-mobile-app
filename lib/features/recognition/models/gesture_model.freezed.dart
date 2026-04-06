@@ -12,8 +12,7 @@ part of 'gesture_model.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 GestureModel _$GestureModelFromJson(Map<String, dynamic> json) {
   return _GestureModel.fromJson(json);
@@ -29,12 +28,8 @@ mixin _$GestureModel {
       throw _privateConstructorUsedError; // Sequence of hand landmarks (21 points per frame)
   int get frameCount => throw _privateConstructorUsedError;
 
-  /// Serializes this GestureModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of GestureModel
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   $GestureModelCopyWith<GestureModel> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -42,18 +37,16 @@ mixin _$GestureModel {
 /// @nodoc
 abstract class $GestureModelCopyWith<$Res> {
   factory $GestureModelCopyWith(
-    GestureModel value,
-    $Res Function(GestureModel) then,
-  ) = _$GestureModelCopyWithImpl<$Res, GestureModel>;
+          GestureModel value, $Res Function(GestureModel) then) =
+      _$GestureModelCopyWithImpl<$Res, GestureModel>;
   @useResult
-  $Res call({
-    String id,
-    String name,
-    String nameAr,
-    String description,
-    List<List<double>> landmarks,
-    int frameCount,
-  });
+  $Res call(
+      {String id,
+      String name,
+      String nameAr,
+      String description,
+      List<List<double>> landmarks,
+      int frameCount});
 }
 
 /// @nodoc
@@ -66,8 +59,6 @@ class _$GestureModelCopyWithImpl<$Res, $Val extends GestureModel>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of GestureModel
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -78,35 +69,32 @@ class _$GestureModelCopyWithImpl<$Res, $Val extends GestureModel>
     Object? landmarks = null,
     Object? frameCount = null,
   }) {
-    return _then(
-      _value.copyWith(
-            id: null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            name: null == name
-                ? _value.name
-                : name // ignore: cast_nullable_to_non_nullable
-                      as String,
-            nameAr: null == nameAr
-                ? _value.nameAr
-                : nameAr // ignore: cast_nullable_to_non_nullable
-                      as String,
-            description: null == description
-                ? _value.description
-                : description // ignore: cast_nullable_to_non_nullable
-                      as String,
-            landmarks: null == landmarks
-                ? _value.landmarks
-                : landmarks // ignore: cast_nullable_to_non_nullable
-                      as List<List<double>>,
-            frameCount: null == frameCount
-                ? _value.frameCount
-                : frameCount // ignore: cast_nullable_to_non_nullable
-                      as int,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      nameAr: null == nameAr
+          ? _value.nameAr
+          : nameAr // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      landmarks: null == landmarks
+          ? _value.landmarks
+          : landmarks // ignore: cast_nullable_to_non_nullable
+              as List<List<double>>,
+      frameCount: null == frameCount
+          ? _value.frameCount
+          : frameCount // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
   }
 }
 
@@ -114,19 +102,17 @@ class _$GestureModelCopyWithImpl<$Res, $Val extends GestureModel>
 abstract class _$$GestureModelImplCopyWith<$Res>
     implements $GestureModelCopyWith<$Res> {
   factory _$$GestureModelImplCopyWith(
-    _$GestureModelImpl value,
-    $Res Function(_$GestureModelImpl) then,
-  ) = __$$GestureModelImplCopyWithImpl<$Res>;
+          _$GestureModelImpl value, $Res Function(_$GestureModelImpl) then) =
+      __$$GestureModelImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String id,
-    String name,
-    String nameAr,
-    String description,
-    List<List<double>> landmarks,
-    int frameCount,
-  });
+  $Res call(
+      {String id,
+      String name,
+      String nameAr,
+      String description,
+      List<List<double>> landmarks,
+      int frameCount});
 }
 
 /// @nodoc
@@ -134,12 +120,9 @@ class __$$GestureModelImplCopyWithImpl<$Res>
     extends _$GestureModelCopyWithImpl<$Res, _$GestureModelImpl>
     implements _$$GestureModelImplCopyWith<$Res> {
   __$$GestureModelImplCopyWithImpl(
-    _$GestureModelImpl _value,
-    $Res Function(_$GestureModelImpl) _then,
-  ) : super(_value, _then);
+      _$GestureModelImpl _value, $Res Function(_$GestureModelImpl) _then)
+      : super(_value, _then);
 
-  /// Create a copy of GestureModel
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -150,48 +133,46 @@ class __$$GestureModelImplCopyWithImpl<$Res>
     Object? landmarks = null,
     Object? frameCount = null,
   }) {
-    return _then(
-      _$GestureModelImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        name: null == name
-            ? _value.name
-            : name // ignore: cast_nullable_to_non_nullable
-                  as String,
-        nameAr: null == nameAr
-            ? _value.nameAr
-            : nameAr // ignore: cast_nullable_to_non_nullable
-                  as String,
-        description: null == description
-            ? _value.description
-            : description // ignore: cast_nullable_to_non_nullable
-                  as String,
-        landmarks: null == landmarks
-            ? _value._landmarks
-            : landmarks // ignore: cast_nullable_to_non_nullable
-                  as List<List<double>>,
-        frameCount: null == frameCount
-            ? _value.frameCount
-            : frameCount // ignore: cast_nullable_to_non_nullable
-                  as int,
-      ),
-    );
+    return _then(_$GestureModelImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      nameAr: null == nameAr
+          ? _value.nameAr
+          : nameAr // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      landmarks: null == landmarks
+          ? _value._landmarks
+          : landmarks // ignore: cast_nullable_to_non_nullable
+              as List<List<double>>,
+      frameCount: null == frameCount
+          ? _value.frameCount
+          : frameCount // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$GestureModelImpl implements _GestureModel {
-  const _$GestureModelImpl({
-    required this.id,
-    required this.name,
-    required this.nameAr,
-    required this.description,
-    final List<List<double>> landmarks = const [],
-    this.frameCount = 0,
-  }) : _landmarks = landmarks;
+  const _$GestureModelImpl(
+      {required this.id,
+      required this.name,
+      required this.nameAr,
+      required this.description,
+      final List<List<double>> landmarks = const [],
+      this.frameCount = 0})
+      : _landmarks = landmarks;
 
   factory _$GestureModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$GestureModelImplFromJson(json);
@@ -213,7 +194,7 @@ class _$GestureModelImpl implements _GestureModel {
     return EqualUnmodifiableListView(_landmarks);
   }
 
-  // Sequence of hand landmarks (21 points per frame)
+// Sequence of hand landmarks (21 points per frame)
   @override
   @JsonKey()
   final int frameCount;
@@ -233,29 +214,18 @@ class _$GestureModelImpl implements _GestureModel {
             (identical(other.nameAr, nameAr) || other.nameAr == nameAr) &&
             (identical(other.description, description) ||
                 other.description == description) &&
-            const DeepCollectionEquality().equals(
-              other._landmarks,
-              _landmarks,
-            ) &&
+            const DeepCollectionEquality()
+                .equals(other._landmarks, _landmarks) &&
             (identical(other.frameCount, frameCount) ||
                 other.frameCount == frameCount));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    id,
-    name,
-    nameAr,
-    description,
-    const DeepCollectionEquality().hash(_landmarks),
-    frameCount,
-  );
+  int get hashCode => Object.hash(runtimeType, id, name, nameAr, description,
+      const DeepCollectionEquality().hash(_landmarks), frameCount);
 
-  /// Create a copy of GestureModel
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$GestureModelImplCopyWith<_$GestureModelImpl> get copyWith =>
@@ -263,19 +233,20 @@ class _$GestureModelImpl implements _GestureModel {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$GestureModelImplToJson(this);
+    return _$$GestureModelImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _GestureModel implements GestureModel {
-  const factory _GestureModel({
-    required final String id,
-    required final String name,
-    required final String nameAr,
-    required final String description,
-    final List<List<double>> landmarks,
-    final int frameCount,
-  }) = _$GestureModelImpl;
+  const factory _GestureModel(
+      {required final String id,
+      required final String name,
+      required final String nameAr,
+      required final String description,
+      final List<List<double>> landmarks,
+      final int frameCount}) = _$GestureModelImpl;
 
   factory _GestureModel.fromJson(Map<String, dynamic> json) =
       _$GestureModelImpl.fromJson;
@@ -289,14 +260,11 @@ abstract class _GestureModel implements GestureModel {
   @override
   String get description;
   @override
-  List<List<double>> get landmarks; // Sequence of hand landmarks (21 points per frame)
-  @override
+  List<List<double>> get landmarks;
+  @override // Sequence of hand landmarks (21 points per frame)
   int get frameCount;
-
-  /// Create a copy of GestureModel
-  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   _$$GestureModelImplCopyWith<_$GestureModelImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -312,12 +280,8 @@ mixin _$RecognitionResult {
   List<RecognitionMatch> get alternatives => throw _privateConstructorUsedError;
   int get processingTimeMs => throw _privateConstructorUsedError;
 
-  /// Serializes this RecognitionResult to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of RecognitionResult
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   $RecognitionResultCopyWith<RecognitionResult> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -325,16 +289,14 @@ mixin _$RecognitionResult {
 /// @nodoc
 abstract class $RecognitionResultCopyWith<$Res> {
   factory $RecognitionResultCopyWith(
-    RecognitionResult value,
-    $Res Function(RecognitionResult) then,
-  ) = _$RecognitionResultCopyWithImpl<$Res, RecognitionResult>;
+          RecognitionResult value, $Res Function(RecognitionResult) then) =
+      _$RecognitionResultCopyWithImpl<$Res, RecognitionResult>;
   @useResult
-  $Res call({
-    String gesture,
-    double confidence,
-    List<RecognitionMatch> alternatives,
-    int processingTimeMs,
-  });
+  $Res call(
+      {String gesture,
+      double confidence,
+      List<RecognitionMatch> alternatives,
+      int processingTimeMs});
 }
 
 /// @nodoc
@@ -347,8 +309,6 @@ class _$RecognitionResultCopyWithImpl<$Res, $Val extends RecognitionResult>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of RecognitionResult
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -357,58 +317,50 @@ class _$RecognitionResultCopyWithImpl<$Res, $Val extends RecognitionResult>
     Object? alternatives = null,
     Object? processingTimeMs = null,
   }) {
-    return _then(
-      _value.copyWith(
-            gesture: null == gesture
-                ? _value.gesture
-                : gesture // ignore: cast_nullable_to_non_nullable
-                      as String,
-            confidence: null == confidence
-                ? _value.confidence
-                : confidence // ignore: cast_nullable_to_non_nullable
-                      as double,
-            alternatives: null == alternatives
-                ? _value.alternatives
-                : alternatives // ignore: cast_nullable_to_non_nullable
-                      as List<RecognitionMatch>,
-            processingTimeMs: null == processingTimeMs
-                ? _value.processingTimeMs
-                : processingTimeMs // ignore: cast_nullable_to_non_nullable
-                      as int,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      gesture: null == gesture
+          ? _value.gesture
+          : gesture // ignore: cast_nullable_to_non_nullable
+              as String,
+      confidence: null == confidence
+          ? _value.confidence
+          : confidence // ignore: cast_nullable_to_non_nullable
+              as double,
+      alternatives: null == alternatives
+          ? _value.alternatives
+          : alternatives // ignore: cast_nullable_to_non_nullable
+              as List<RecognitionMatch>,
+      processingTimeMs: null == processingTimeMs
+          ? _value.processingTimeMs
+          : processingTimeMs // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
   }
 }
 
 /// @nodoc
 abstract class _$$RecognitionResultImplCopyWith<$Res>
     implements $RecognitionResultCopyWith<$Res> {
-  factory _$$RecognitionResultImplCopyWith(
-    _$RecognitionResultImpl value,
-    $Res Function(_$RecognitionResultImpl) then,
-  ) = __$$RecognitionResultImplCopyWithImpl<$Res>;
+  factory _$$RecognitionResultImplCopyWith(_$RecognitionResultImpl value,
+          $Res Function(_$RecognitionResultImpl) then) =
+      __$$RecognitionResultImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String gesture,
-    double confidence,
-    List<RecognitionMatch> alternatives,
-    int processingTimeMs,
-  });
+  $Res call(
+      {String gesture,
+      double confidence,
+      List<RecognitionMatch> alternatives,
+      int processingTimeMs});
 }
 
 /// @nodoc
 class __$$RecognitionResultImplCopyWithImpl<$Res>
     extends _$RecognitionResultCopyWithImpl<$Res, _$RecognitionResultImpl>
     implements _$$RecognitionResultImplCopyWith<$Res> {
-  __$$RecognitionResultImplCopyWithImpl(
-    _$RecognitionResultImpl _value,
-    $Res Function(_$RecognitionResultImpl) _then,
-  ) : super(_value, _then);
+  __$$RecognitionResultImplCopyWithImpl(_$RecognitionResultImpl _value,
+      $Res Function(_$RecognitionResultImpl) _then)
+      : super(_value, _then);
 
-  /// Create a copy of RecognitionResult
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -417,38 +369,36 @@ class __$$RecognitionResultImplCopyWithImpl<$Res>
     Object? alternatives = null,
     Object? processingTimeMs = null,
   }) {
-    return _then(
-      _$RecognitionResultImpl(
-        gesture: null == gesture
-            ? _value.gesture
-            : gesture // ignore: cast_nullable_to_non_nullable
-                  as String,
-        confidence: null == confidence
-            ? _value.confidence
-            : confidence // ignore: cast_nullable_to_non_nullable
-                  as double,
-        alternatives: null == alternatives
-            ? _value._alternatives
-            : alternatives // ignore: cast_nullable_to_non_nullable
-                  as List<RecognitionMatch>,
-        processingTimeMs: null == processingTimeMs
-            ? _value.processingTimeMs
-            : processingTimeMs // ignore: cast_nullable_to_non_nullable
-                  as int,
-      ),
-    );
+    return _then(_$RecognitionResultImpl(
+      gesture: null == gesture
+          ? _value.gesture
+          : gesture // ignore: cast_nullable_to_non_nullable
+              as String,
+      confidence: null == confidence
+          ? _value.confidence
+          : confidence // ignore: cast_nullable_to_non_nullable
+              as double,
+      alternatives: null == alternatives
+          ? _value._alternatives
+          : alternatives // ignore: cast_nullable_to_non_nullable
+              as List<RecognitionMatch>,
+      processingTimeMs: null == processingTimeMs
+          ? _value.processingTimeMs
+          : processingTimeMs // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$RecognitionResultImpl implements _RecognitionResult {
-  const _$RecognitionResultImpl({
-    required this.gesture,
-    required this.confidence,
-    final List<RecognitionMatch> alternatives = const [],
-    this.processingTimeMs = 0,
-  }) : _alternatives = alternatives;
+  const _$RecognitionResultImpl(
+      {required this.gesture,
+      required this.confidence,
+      final List<RecognitionMatch> alternatives = const [],
+      this.processingTimeMs = 0})
+      : _alternatives = alternatives;
 
   factory _$RecognitionResultImpl.fromJson(Map<String, dynamic> json) =>
       _$$RecognitionResultImplFromJson(json);
@@ -483,48 +433,38 @@ class _$RecognitionResultImpl implements _RecognitionResult {
             (identical(other.gesture, gesture) || other.gesture == gesture) &&
             (identical(other.confidence, confidence) ||
                 other.confidence == confidence) &&
-            const DeepCollectionEquality().equals(
-              other._alternatives,
-              _alternatives,
-            ) &&
+            const DeepCollectionEquality()
+                .equals(other._alternatives, _alternatives) &&
             (identical(other.processingTimeMs, processingTimeMs) ||
                 other.processingTimeMs == processingTimeMs));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    gesture,
-    confidence,
-    const DeepCollectionEquality().hash(_alternatives),
-    processingTimeMs,
-  );
+  int get hashCode => Object.hash(runtimeType, gesture, confidence,
+      const DeepCollectionEquality().hash(_alternatives), processingTimeMs);
 
-  /// Create a copy of RecognitionResult
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$RecognitionResultImplCopyWith<_$RecognitionResultImpl> get copyWith =>
       __$$RecognitionResultImplCopyWithImpl<_$RecognitionResultImpl>(
-        this,
-        _$identity,
-      );
+          this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$RecognitionResultImplToJson(this);
+    return _$$RecognitionResultImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _RecognitionResult implements RecognitionResult {
-  const factory _RecognitionResult({
-    required final String gesture,
-    required final double confidence,
-    final List<RecognitionMatch> alternatives,
-    final int processingTimeMs,
-  }) = _$RecognitionResultImpl;
+  const factory _RecognitionResult(
+      {required final String gesture,
+      required final double confidence,
+      final List<RecognitionMatch> alternatives,
+      final int processingTimeMs}) = _$RecognitionResultImpl;
 
   factory _RecognitionResult.fromJson(Map<String, dynamic> json) =
       _$RecognitionResultImpl.fromJson;
@@ -537,11 +477,8 @@ abstract class _RecognitionResult implements RecognitionResult {
   List<RecognitionMatch> get alternatives;
   @override
   int get processingTimeMs;
-
-  /// Create a copy of RecognitionResult
-  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   _$$RecognitionResultImplCopyWith<_$RecognitionResultImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -555,12 +492,8 @@ mixin _$RecognitionMatch {
   String get gesture => throw _privateConstructorUsedError;
   double get confidence => throw _privateConstructorUsedError;
 
-  /// Serializes this RecognitionMatch to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of RecognitionMatch
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   $RecognitionMatchCopyWith<RecognitionMatch> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -568,9 +501,8 @@ mixin _$RecognitionMatch {
 /// @nodoc
 abstract class $RecognitionMatchCopyWith<$Res> {
   factory $RecognitionMatchCopyWith(
-    RecognitionMatch value,
-    $Res Function(RecognitionMatch) then,
-  ) = _$RecognitionMatchCopyWithImpl<$Res, RecognitionMatch>;
+          RecognitionMatch value, $Res Function(RecognitionMatch) then) =
+      _$RecognitionMatchCopyWithImpl<$Res, RecognitionMatch>;
   @useResult
   $Res call({String gesture, double confidence});
 }
@@ -585,34 +517,31 @@ class _$RecognitionMatchCopyWithImpl<$Res, $Val extends RecognitionMatch>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of RecognitionMatch
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? gesture = null, Object? confidence = null}) {
-    return _then(
-      _value.copyWith(
-            gesture: null == gesture
-                ? _value.gesture
-                : gesture // ignore: cast_nullable_to_non_nullable
-                      as String,
-            confidence: null == confidence
-                ? _value.confidence
-                : confidence // ignore: cast_nullable_to_non_nullable
-                      as double,
-          )
-          as $Val,
-    );
+  $Res call({
+    Object? gesture = null,
+    Object? confidence = null,
+  }) {
+    return _then(_value.copyWith(
+      gesture: null == gesture
+          ? _value.gesture
+          : gesture // ignore: cast_nullable_to_non_nullable
+              as String,
+      confidence: null == confidence
+          ? _value.confidence
+          : confidence // ignore: cast_nullable_to_non_nullable
+              as double,
+    ) as $Val);
   }
 }
 
 /// @nodoc
 abstract class _$$RecognitionMatchImplCopyWith<$Res>
     implements $RecognitionMatchCopyWith<$Res> {
-  factory _$$RecognitionMatchImplCopyWith(
-    _$RecognitionMatchImpl value,
-    $Res Function(_$RecognitionMatchImpl) then,
-  ) = __$$RecognitionMatchImplCopyWithImpl<$Res>;
+  factory _$$RecognitionMatchImplCopyWith(_$RecognitionMatchImpl value,
+          $Res Function(_$RecognitionMatchImpl) then) =
+      __$$RecognitionMatchImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({String gesture, double confidence});
@@ -622,38 +551,34 @@ abstract class _$$RecognitionMatchImplCopyWith<$Res>
 class __$$RecognitionMatchImplCopyWithImpl<$Res>
     extends _$RecognitionMatchCopyWithImpl<$Res, _$RecognitionMatchImpl>
     implements _$$RecognitionMatchImplCopyWith<$Res> {
-  __$$RecognitionMatchImplCopyWithImpl(
-    _$RecognitionMatchImpl _value,
-    $Res Function(_$RecognitionMatchImpl) _then,
-  ) : super(_value, _then);
+  __$$RecognitionMatchImplCopyWithImpl(_$RecognitionMatchImpl _value,
+      $Res Function(_$RecognitionMatchImpl) _then)
+      : super(_value, _then);
 
-  /// Create a copy of RecognitionMatch
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? gesture = null, Object? confidence = null}) {
-    return _then(
-      _$RecognitionMatchImpl(
-        gesture: null == gesture
-            ? _value.gesture
-            : gesture // ignore: cast_nullable_to_non_nullable
-                  as String,
-        confidence: null == confidence
-            ? _value.confidence
-            : confidence // ignore: cast_nullable_to_non_nullable
-                  as double,
-      ),
-    );
+  $Res call({
+    Object? gesture = null,
+    Object? confidence = null,
+  }) {
+    return _then(_$RecognitionMatchImpl(
+      gesture: null == gesture
+          ? _value.gesture
+          : gesture // ignore: cast_nullable_to_non_nullable
+              as String,
+      confidence: null == confidence
+          ? _value.confidence
+          : confidence // ignore: cast_nullable_to_non_nullable
+              as double,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$RecognitionMatchImpl implements _RecognitionMatch {
-  const _$RecognitionMatchImpl({
-    required this.gesture,
-    required this.confidence,
-  });
+  const _$RecognitionMatchImpl(
+      {required this.gesture, required this.confidence});
 
   factory _$RecognitionMatchImpl.fromJson(Map<String, dynamic> json) =>
       _$$RecognitionMatchImplFromJson(json);
@@ -678,32 +603,29 @@ class _$RecognitionMatchImpl implements _RecognitionMatch {
                 other.confidence == confidence));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, gesture, confidence);
 
-  /// Create a copy of RecognitionMatch
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$RecognitionMatchImplCopyWith<_$RecognitionMatchImpl> get copyWith =>
       __$$RecognitionMatchImplCopyWithImpl<_$RecognitionMatchImpl>(
-        this,
-        _$identity,
-      );
+          this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$RecognitionMatchImplToJson(this);
+    return _$$RecognitionMatchImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _RecognitionMatch implements RecognitionMatch {
-  const factory _RecognitionMatch({
-    required final String gesture,
-    required final double confidence,
-  }) = _$RecognitionMatchImpl;
+  const factory _RecognitionMatch(
+      {required final String gesture,
+      required final double confidence}) = _$RecognitionMatchImpl;
 
   factory _RecognitionMatch.fromJson(Map<String, dynamic> json) =
       _$RecognitionMatchImpl.fromJson;
@@ -712,11 +634,8 @@ abstract class _RecognitionMatch implements RecognitionMatch {
   String get gesture;
   @override
   double get confidence;
-
-  /// Create a copy of RecognitionMatch
-  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   _$$RecognitionMatchImplCopyWith<_$RecognitionMatchImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -732,12 +651,8 @@ mixin _$HandLandmark {
   double get z => throw _privateConstructorUsedError;
   double get visibility => throw _privateConstructorUsedError;
 
-  /// Serializes this HandLandmark to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of HandLandmark
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   $HandLandmarkCopyWith<HandLandmark> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -745,9 +660,8 @@ mixin _$HandLandmark {
 /// @nodoc
 abstract class $HandLandmarkCopyWith<$Res> {
   factory $HandLandmarkCopyWith(
-    HandLandmark value,
-    $Res Function(HandLandmark) then,
-  ) = _$HandLandmarkCopyWithImpl<$Res, HandLandmark>;
+          HandLandmark value, $Res Function(HandLandmark) then) =
+      _$HandLandmarkCopyWithImpl<$Res, HandLandmark>;
   @useResult
   $Res call({double x, double y, double z, double visibility});
 }
@@ -762,8 +676,6 @@ class _$HandLandmarkCopyWithImpl<$Res, $Val extends HandLandmark>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of HandLandmark
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -772,27 +684,24 @@ class _$HandLandmarkCopyWithImpl<$Res, $Val extends HandLandmark>
     Object? z = null,
     Object? visibility = null,
   }) {
-    return _then(
-      _value.copyWith(
-            x: null == x
-                ? _value.x
-                : x // ignore: cast_nullable_to_non_nullable
-                      as double,
-            y: null == y
-                ? _value.y
-                : y // ignore: cast_nullable_to_non_nullable
-                      as double,
-            z: null == z
-                ? _value.z
-                : z // ignore: cast_nullable_to_non_nullable
-                      as double,
-            visibility: null == visibility
-                ? _value.visibility
-                : visibility // ignore: cast_nullable_to_non_nullable
-                      as double,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      x: null == x
+          ? _value.x
+          : x // ignore: cast_nullable_to_non_nullable
+              as double,
+      y: null == y
+          ? _value.y
+          : y // ignore: cast_nullable_to_non_nullable
+              as double,
+      z: null == z
+          ? _value.z
+          : z // ignore: cast_nullable_to_non_nullable
+              as double,
+      visibility: null == visibility
+          ? _value.visibility
+          : visibility // ignore: cast_nullable_to_non_nullable
+              as double,
+    ) as $Val);
   }
 }
 
@@ -800,9 +709,8 @@ class _$HandLandmarkCopyWithImpl<$Res, $Val extends HandLandmark>
 abstract class _$$HandLandmarkImplCopyWith<$Res>
     implements $HandLandmarkCopyWith<$Res> {
   factory _$$HandLandmarkImplCopyWith(
-    _$HandLandmarkImpl value,
-    $Res Function(_$HandLandmarkImpl) then,
-  ) = __$$HandLandmarkImplCopyWithImpl<$Res>;
+          _$HandLandmarkImpl value, $Res Function(_$HandLandmarkImpl) then) =
+      __$$HandLandmarkImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({double x, double y, double z, double visibility});
@@ -813,12 +721,9 @@ class __$$HandLandmarkImplCopyWithImpl<$Res>
     extends _$HandLandmarkCopyWithImpl<$Res, _$HandLandmarkImpl>
     implements _$$HandLandmarkImplCopyWith<$Res> {
   __$$HandLandmarkImplCopyWithImpl(
-    _$HandLandmarkImpl _value,
-    $Res Function(_$HandLandmarkImpl) _then,
-  ) : super(_value, _then);
+      _$HandLandmarkImpl _value, $Res Function(_$HandLandmarkImpl) _then)
+      : super(_value, _then);
 
-  /// Create a copy of HandLandmark
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -827,38 +732,35 @@ class __$$HandLandmarkImplCopyWithImpl<$Res>
     Object? z = null,
     Object? visibility = null,
   }) {
-    return _then(
-      _$HandLandmarkImpl(
-        x: null == x
-            ? _value.x
-            : x // ignore: cast_nullable_to_non_nullable
-                  as double,
-        y: null == y
-            ? _value.y
-            : y // ignore: cast_nullable_to_non_nullable
-                  as double,
-        z: null == z
-            ? _value.z
-            : z // ignore: cast_nullable_to_non_nullable
-                  as double,
-        visibility: null == visibility
-            ? _value.visibility
-            : visibility // ignore: cast_nullable_to_non_nullable
-                  as double,
-      ),
-    );
+    return _then(_$HandLandmarkImpl(
+      x: null == x
+          ? _value.x
+          : x // ignore: cast_nullable_to_non_nullable
+              as double,
+      y: null == y
+          ? _value.y
+          : y // ignore: cast_nullable_to_non_nullable
+              as double,
+      z: null == z
+          ? _value.z
+          : z // ignore: cast_nullable_to_non_nullable
+              as double,
+      visibility: null == visibility
+          ? _value.visibility
+          : visibility // ignore: cast_nullable_to_non_nullable
+              as double,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$HandLandmarkImpl implements _HandLandmark {
-  const _$HandLandmarkImpl({
-    required this.x,
-    required this.y,
-    required this.z,
-    required this.visibility,
-  });
+  const _$HandLandmarkImpl(
+      {required this.x,
+      required this.y,
+      required this.z,
+      required this.visibility});
 
   factory _$HandLandmarkImpl.fromJson(Map<String, dynamic> json) =>
       _$$HandLandmarkImplFromJson(json);
@@ -889,13 +791,11 @@ class _$HandLandmarkImpl implements _HandLandmark {
                 other.visibility == visibility));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, x, y, z, visibility);
 
-  /// Create a copy of HandLandmark
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$HandLandmarkImplCopyWith<_$HandLandmarkImpl> get copyWith =>
@@ -903,17 +803,18 @@ class _$HandLandmarkImpl implements _HandLandmark {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$HandLandmarkImplToJson(this);
+    return _$$HandLandmarkImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _HandLandmark implements HandLandmark {
-  const factory _HandLandmark({
-    required final double x,
-    required final double y,
-    required final double z,
-    required final double visibility,
-  }) = _$HandLandmarkImpl;
+  const factory _HandLandmark(
+      {required final double x,
+      required final double y,
+      required final double z,
+      required final double visibility}) = _$HandLandmarkImpl;
 
   factory _HandLandmark.fromJson(Map<String, dynamic> json) =
       _$HandLandmarkImpl.fromJson;
@@ -926,11 +827,8 @@ abstract class _HandLandmark implements HandLandmark {
   double get z;
   @override
   double get visibility;
-
-  /// Create a copy of HandLandmark
-  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey(ignore: true)
   _$$HandLandmarkImplCopyWith<_$HandLandmarkImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

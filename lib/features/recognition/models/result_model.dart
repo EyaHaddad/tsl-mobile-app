@@ -7,7 +7,7 @@ part 'result_model.g.dart';
 class RecognitionResultData with _$RecognitionResultData {
   const factory RecognitionResultData({
     required String primaryGesture,
-    required String primaryGestureAr,
+    required String primaryGestureAr, // Arabic name for the primary gesture
     required double primaryConfidence,
     @Default([]) List<AlternativeMatch> alternatives,
     @Default(0) int processingTime, // ms

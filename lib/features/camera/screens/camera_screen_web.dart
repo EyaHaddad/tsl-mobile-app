@@ -6,6 +6,7 @@ import 'package:tsl_mobile_app/core/theme/app_colors.dart';
 import 'package:tsl_mobile_app/features/recognition/screens/result_screen.dart';
 import 'package:tsl_mobile_app/core/routes/transition_routes.dart';
 
+// Camera Screen - Web implementation
 class CameraScreenWeb extends StatefulWidget {
   const CameraScreenWeb({super.key});
 
@@ -54,7 +55,7 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
         setState(() {});
       }
     } catch (_) {
-      // Keep UI fallback; errors can happen on denied permissions / no device.
+      // Keep UI fallback; errors can happen on denied permissions / no device
     }
   }
 
@@ -112,7 +113,7 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
         await controller.stopVideoRecording();
       }
     } catch (_) {
-      // If stop fails, still navigate (recognition demo can proceed).
+      // If stop fails, still navigate (recognition demo can proceed)
     }
 
     if (!mounted) return;

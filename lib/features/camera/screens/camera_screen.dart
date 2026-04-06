@@ -5,7 +5,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tsl_mobile_app/features/recognition/screens/result_screen.dart';
 import 'package:tsl_mobile_app/core/routes/transition_routes.dart';
 import 'package:tsl_mobile_app/features/camera/screens/camera_screen_web.dart';
+import 'package:tsl_mobile_app/features/camera/camera_service.dart';
 
+// Camera Screen - Mobile implementation
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
 
@@ -14,16 +16,19 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  List<CameraDescription> _cameras = const [];
-  CameraController? _controller;
+  late final CameraService _cameraService;
   Future<void>? _initializeControllerFuture;
-  int _selectedCameraIndex = 0;
 
   bool _isRecording = false;
+  bool _isSwitchingCamera = false;
+  String? _cameraError;
 
   @override
   void initState() {
     super.initState();
+    _cameraService = CameraService(
+      preferredLensDirection: CameraLensDirection.back,
+    );
 
     if (!kIsWeb) {
       _initializeControllerFuture = _initCamera();
@@ -32,99 +37,113 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> _initCamera() async {
     try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) return;
-
-      _cameras = cameras;
-
-      final backIndex = cameras.indexWhere(
-        (c) => c.lensDirection == CameraLensDirection.back,
-      );
-      _selectedCameraIndex = backIndex >= 0 ? backIndex : 0;
-
-      await _startControllerForIndex(_selectedCameraIndex);
-    } catch (_) {
-      // Permission denied / camera unavailable.
+      await _cameraService.initialize(resolution: ResolutionPreset.medium);
+      if (!mounted) return;
+      setState(() {
+        _cameraError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _cameraError = 'تعذر تشغيل الكاميرا. تحقق من الأذونات ثم أعد المحاولة.';
+      });
+      _showErrorSnackBar(e.toString());
     }
-  }
-
-  Future<void> _startControllerForIndex(int index) async {
-    final description = _cameras[index];
-
-    final old = _controller;
-    _controller = null;
-    await old?.dispose();
-
-    final controller = CameraController(
-      description,
-      ResolutionPreset.medium,
-      enableAudio: false,
-    );
-    _controller = controller;
-    await controller.initialize();
-    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _cameraService.dispose();
     super.dispose();
   }
 
   Future<void> _toggleCamera() async {
-    if (_cameras.length < 2) return;
-    if (_isRecording) return;
+    if (_isRecording || _isSwitchingCamera) return;
 
-    final nextIndex = (_selectedCameraIndex + 1) % _cameras.length;
-    setState(() {
-      _selectedCameraIndex = nextIndex;
-    });
+    setState(() => _isSwitchingCamera = true);
 
     try {
-      await _startControllerForIndex(nextIndex);
-    } catch (_) {
-      // ignore
+      await _cameraService.switchCamera();
+      if (!mounted) return;
+      setState(() {
+        _cameraError = null;
+      });
+    } catch (e) {
+      _showErrorSnackBar('تعذر تبديل الكاميرا');
+      if (!mounted) return;
+      setState(() {
+        _cameraError = e.toString();
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() => _isSwitchingCamera = false);
     }
   }
 
   Future<void> _startRecording() async {
-    final controller = _controller;
-    if (controller == null || !controller.value.isInitialized) return;
+    if (!_cameraService.isInitialized) {
+      _showErrorSnackBar('الكاميرا غير جاهزة بعد');
+      return;
+    }
 
     try {
-      await controller.startVideoRecording();
+      await _cameraService.startVideoRecording();
       if (!mounted) return;
       setState(() => _isRecording = true);
     } catch (_) {
-      // ignore
+      _showErrorSnackBar('تعذر بدء التسجيل');
     }
   }
 
   Future<void> _endRecording() async {
-    final controller = _controller;
+    if (!_isRecording) {
+      _showErrorSnackBar('لا يوجد تسجيل جارٍ');
+      return;
+    }
+
+    String? recordedVideoPath;
 
     try {
-      if (controller != null &&
-          controller.value.isInitialized &&
-          _isRecording) {
-        await controller.stopVideoRecording();
-      }
+      recordedVideoPath = await _cameraService.stopVideoRecording();
     } catch (_) {
-      // ignore
+      _showErrorSnackBar('تعذر إنهاء التسجيل');
     }
 
     if (!mounted) return;
     setState(() => _isRecording = false);
 
+    if (recordedVideoPath == null) {
+      _showErrorSnackBar('لم يتم حفظ أي ملف فيديو');
+      return;
+    }
+
     Navigator.of(context).push(FadeSlidePageRoute(page: const ResultScreen()));
   }
 
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Widget _buildPreview() {
-    final controller = _controller;
+    final controller = _cameraService.controller;
     if (controller == null || !controller.value.isInitialized) {
-      return const Center(
-        child: Icon(Icons.camera_alt_outlined, size: 70, color: Colors.black45),
-      );
+      if (_cameraError != null) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Center(
+            child: Text(
+              _cameraError!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.black54),
+            ),
+          ),
+        );
+      }
+
+      return const Center(child: CircularProgressIndicator());
     }
 
     final previewSize = controller.value.previewSize;
@@ -132,8 +151,8 @@ class _CameraScreenState extends State<CameraScreen> {
       return CameraPreview(controller);
     }
 
-    // Cover the available space while maintaining aspect ratio.
-    // Using swapped width/height matches typical camera preview orientation.
+    // Cover the available space while maintaining aspect ratio
+    // Using swapped width/height matches typical camera preview orientation
     return FittedBox(
       fit: BoxFit.cover,
       child: SizedBox(
@@ -150,7 +169,7 @@ class _CameraScreenState extends State<CameraScreen> {
       return const CameraScreenWeb();
     }
 
-    final isCameraReady = _controller?.value.isInitialized ?? false;
+    final isCameraReady = _cameraService.isInitialized;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -196,7 +215,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   ),
                   // Camera flip icon
                   IconButton(
-                    onPressed: _toggleCamera,
+                    onPressed: _isSwitchingCamera ? null : _toggleCamera,
                     icon: SvgPicture.asset(
                       'assets/icons/camera_flip.svg',
                       width: 32,
@@ -334,9 +353,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    _endRecording();
-                  },
+                  onPressed: _isRecording ? _endRecording : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE63950),
                     shape: RoundedRectangleBorder(
