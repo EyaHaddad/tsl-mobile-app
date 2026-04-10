@@ -60,9 +60,7 @@ void main() {
 
       // Ici, la logique d'auto-delete préventive : 
       // Si la confiance est < au seuil, on considère que la donnée ne doit pas être traitée
-      bool shouldDiscard = processed.primaryConfidence < 0.6;
-      
-      expect(shouldDiscard, isTrue, reason: "La donnée doit être jetée si la confiance est trop basse");
+      expect(processed, isNull, reason: "La donnée doit être jetée si la confiance est trop basse");
     });
 
     // TEST 3 : Performance pour la fluidité vocale
