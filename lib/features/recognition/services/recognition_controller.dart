@@ -22,15 +22,24 @@ class RecognitionController {
   bool _isRunning = false;
   bool _isBusy = false;
 
+  // Stream results for UI to listen
+  late final StreamController<RecognitionResultData> _resultController;
+
   RecognitionController({
     required this.cameraService,
     required this.mediaPipeService,
     required this.tfliteService,
     required this.sequenceManager,
     required this.inferenceService,
-  });
+  }) {
+    // Initialize result stream controller
+    _resultController = StreamController<RecognitionResultData>.broadcast();
+  }
 
   bool get isRunning => _isRunning;
+
+  /// Stream of recognition results for UI consumption
+  Stream<RecognitionResultData> get resultStream => _resultController.stream;
 
   // Prepares services and metadata
   Future<void> initialize({
@@ -79,12 +88,15 @@ class RecognitionController {
       // Call existing frame processor
       final result = await processFrameBytes(frameBytes);
 
-      // Result is handled by caller (UI can listen to result stream if added)
-      if (result != null && kDebugMode) {
-        print(
-          'Recognition: ${result.primaryGesture} '
-          '(${(result.primaryConfidence * 100).toStringAsFixed(1)}%)',
-        );
+      // Emit result to stream for UI listening
+      if (result != null) {
+        _resultController.add(result);
+        if (kDebugMode) {
+          print(
+            'Recognition: ${result.primaryGesture} '
+            '(${(result.primaryConfidence * 100).toStringAsFixed(1)}%)',
+          );
+        }
       }
     } catch (e) {
       if (kDebugMode) print('Frame processing error: $e');
@@ -155,6 +167,7 @@ class RecognitionController {
     await stop();
     await mediaPipeService.dispose();
     tfliteService.dispose();
+    await _resultController.close();
   }
 
   // ============================================================================
