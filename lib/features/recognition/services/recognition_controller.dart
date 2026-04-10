@@ -78,11 +78,13 @@ class RecognitionController {
 
       // Call existing frame processor
       final result = await processFrameBytes(frameBytes);
-      
+
       // Result is handled by caller (UI can listen to result stream if added)
       if (result != null && kDebugMode) {
-        print('Recognition: ${result.primaryGesture} '
-            '(${(result.primaryConfidence * 100).toStringAsFixed(1)}%)');
+        print(
+          'Recognition: ${result.primaryGesture} '
+          '(${(result.primaryConfidence * 100).toStringAsFixed(1)}%)',
+        );
       }
     } catch (e) {
       if (kDebugMode) print('Frame processing error: $e');
@@ -133,8 +135,10 @@ class RecognitionController {
       final rawResult = await tfliteService.runInference(sequenceInput);
 
       // Step 5: Apply post-processing (thresholding, smoothing, FPS limiting)
-      final postProcessedResult = inferenceService.applyPostProcessing(rawResult);
-      
+      final postProcessedResult = inferenceService.applyPostProcessing(
+        rawResult,
+      );
+
       return postProcessedResult;
     } catch (e) {
       if (kDebugMode) print('Inference pipeline error: $e');
@@ -156,9 +160,9 @@ class RecognitionController {
   // ============================================================================
   // HELPER: Convert CameraImage to Uint8List
   // ============================================================================
-  
+
   /// Convert CameraImage to bytes for further processing
-  /// Handles JPEG compression for efficiency
+  /// Handles JPEG format directly, or passes raw plane data for YUV formats
   static Uint8List _cameraImageToBytes(CameraImage image) {
     try {
       // For JPEG format, directly use the bytes
@@ -166,9 +170,19 @@ class RecognitionController {
         return image.planes[0].bytes;
       }
 
-      // For other formats (NV21, YUV420), we'd need to encode
-      // For now, return empty to skip processing
-      // TODO: Implement proper YUV to JPEG or RGB conversion
+      // For NV21/YUV420 formats (most Android devices)
+      // Return the raw Y-plane data (luminance channel) for hand detection
+      // MediaPipe can work with grayscale Y-plane for landmark detection
+      if (image.format.group == ImageFormatGroup.yuv420) {
+        // Y-plane contains luminance; sufficient for hand landmark detection
+        return image.planes[0].bytes;
+      }
+
+      // Fallback: return raw bytes from first plane
+      if (image.planes.isNotEmpty) {
+        return image.planes[0].bytes;
+      }
+
       return Uint8List(0);
     } catch (e) {
       if (kDebugMode) print('Error converting CameraImage to bytes: $e');
