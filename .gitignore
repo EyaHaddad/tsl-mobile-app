@@ -35,6 +35,19 @@ migrate_working_dir/
 android/build/
 ios/build/
 
+# Gradle / Android generated
+.gradle/
+.gradle-home/
+**/.gradle/
+**/build/
+android/local.properties
+android/**/captures/
+*.apk
+*.aab
+*.ap_
+*.hprof
+build_output.txt
+
 # Symbolication related
 app.*.symbols
 
@@ -50,3 +63,6 @@ coverage/
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.dart_tool/
+
+# Third party dependencies
+third_party/

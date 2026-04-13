@@ -277,5 +277,4 @@ void main() {
       expect(result3.primaryGesture, equals('NotInitialized'));
     });
   });
-  ;
 }

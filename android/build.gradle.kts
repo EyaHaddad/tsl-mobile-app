@@ -7,7 +7,13 @@ allprojects {
 
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
-        .dir("../../build")
+        .dir(
+            if (System.getProperty("os.name").startsWith("Windows")) {
+                "C:/tsl_build"
+            } else {
+                "../../build"
+            }
+        )
         .get()
 rootProject.layout.buildDirectory.value(newBuildDir)
 
