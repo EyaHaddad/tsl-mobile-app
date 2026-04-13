@@ -48,3 +48,14 @@ coverage/
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.dart_tool/
+
+# Gradle related
+.gradle-home/
+.gradle/
+.gradlew
+build**
+android\build
+**/*build\*
+
+# Third-party dependencies
+**/third_party/
