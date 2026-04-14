@@ -16,7 +16,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -24,11 +24,25 @@ android {
         applicationId = "com.example.tsl_mobile_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24 // Required for MediaPipe
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        ndk {
+            abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
+        }
     }
+
+    // TODO: Re-enable splits after testing
+    // splits {
+    //     abi {
+    //         isEnable = true
+    //         reset()
+    //         include("arm64-v8a", "armeabi-v7a")
+    //         isUniversalApk = true
+    //     }
+    // }
 
     buildTypes {
         release {
@@ -40,12 +54,14 @@ android {
 }
 
 dependencies {
-    implementation("com.google.mediapipe:tasks-vision:latest.release")
-    implementation("androidx.camera:camera-core:latest.release")
-    implementation("androidx.camera:camera-camera2:latest.release")
-    implementation("androidx.camera:camera-lifecycle:latest.release")
-    implementation("androidx.camera:camera-view:latest.release")
-    implementation("androidx.constraintlayout:constraintlayout:latest.release")
+    implementation("com.google.mediapipe:tasks-vision:0.10.14")
+    
+    val cameraVersion = "1.3.2"
+    implementation("androidx.camera:camera-core:$cameraVersion")
+    implementation("androidx.camera:camera-camera2:$cameraVersion")
+    implementation("androidx.camera:camera-lifecycle:$cameraVersion")
+    implementation("androidx.camera:camera-view:$cameraVersion")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 }
 
 flutter {

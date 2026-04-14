@@ -11,7 +11,6 @@ class TFLiteService {
 
   bool _isInitialized = false;
   LstmDatasetMetadata? _metadata;
-  String? _modelPath;
 
   TFLiteService();
 
@@ -20,7 +19,6 @@ class TFLiteService {
     String modelPath, {
     String metadataAssetPath = defaultMetadataAssetPath,
   }) async {
-    _modelPath = modelPath;
     try {
       // Validate model file exists (if path is a file)
       if (!modelPath.startsWith('assets/')) {
@@ -210,7 +208,6 @@ class TFLiteService {
   void dispose() {
     _isInitialized = false;
     _metadata = null;
-    _modelPath = null;
   }
 
   bool get isInitialized => _isInitialized;

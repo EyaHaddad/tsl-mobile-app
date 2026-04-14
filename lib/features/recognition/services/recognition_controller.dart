@@ -3,7 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../camera/camera_service.dart';
-import '../managers/sequence_manager.dart';
+import '../models/managers/sequence_manager.dart';
 import '../models/result_model.dart';
 import 'inference_service.dart';
 import 'mediapipe_service.dart';

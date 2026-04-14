@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tsl_mobile_app/features/recognition/managers/sequence_manager.dart';
+import 'package:tsl_mobile_app/features/recognition/models/managers/sequence_manager.dart';
 import 'package:tsl_mobile_app/features/recognition/services/tflite_service.dart';
 
 void main() {
