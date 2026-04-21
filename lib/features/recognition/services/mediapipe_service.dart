@@ -158,8 +158,10 @@ class MediaPipeService {
           .take(_featureCountPerFrame)
           .toList(growable: false);
 
+      // ✅ POINT C: Validate structure after cast removal
       if (features.length != _featureCountPerFrame) {
-        print('⚠️ [MEDIAPIPE_ERROR] Mauvaise taille: ${features.length} au lieu de $_featureCountPerFrame');
+        print('❌ [LANDMARK_VALIDATION] Wrong size: ${features.length} != $_featureCountPerFrame');
+        print('[LANDMARK_DEBUG] First 10 values: ${features.take(10).toList()}');
         return List<double>.filled(_featureCountPerFrame, 0.0, growable: false);
       }
 
@@ -237,8 +239,8 @@ class MediaPipeService {
     // (Cela ne devrait pas arriver car recognition_controller fait déjà la conversion)
     try {
       final planesField = image.planes;
-      if (planesField != null && (planesField as List).isNotEmpty) {
-        final bytes = (planesField as List).first.bytes;
+      if (planesField != null && planesField.isNotEmpty) {
+        final bytes = planesField.first.bytes;
         if (bytes != null && bytes.isNotEmpty) {
           print('⚠️ [MEDIAPIPE] CameraImage reçu directement - extraction plan Y...');
           return bytes;

@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
@@ -114,8 +112,14 @@ class _CameraScreenState extends State<CameraScreen> {
     }
 
     try {
+      print('🚀 [INIT] Démarrage de l\'initialisation du pipeline...');
+      
       // Load metadata and create SequenceManager with correct scaler values
-      final sequenceManager = await SequenceManager.fromDefaultMetaAsset();
+      final sequenceManager = await SequenceManager.fromDefaultMetaAsset()
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => throw TimeoutException('Timeout loading metadata'),
+          );
 
       // Initialize recognition controller with proper metadata
       _recognitionController = RecognitionController(
@@ -137,14 +141,23 @@ class _CameraScreenState extends State<CameraScreen> {
         }
       });
 
-      // Initialize the controller with model path
-      await _recognitionController.initialize(
-        modelPath: TFLiteService.defaultModelPath,
-        metadataAssetPath: TFLiteService.defaultMetadataAssetPath,
-      );
+      // Initialize the controller with model path + TIMEOUT
+      print('🧠 [INIT] Chargement du modèle TFLite...');
+      await _recognitionController
+          .initialize(
+            modelPath: TFLiteService.defaultModelPath,
+            metadataAssetPath: TFLiteService.defaultMetadataAssetPath,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException('Timeout initializing TFLite model'),
+          );
+      print('✅ [INIT] Modèle TFLite chargé avec succès!');
 
       // Start live recognition (ImageStream pour l'IA)
+      print('📹 [INIT] Démarrage du flux caméra...');
       await _recognitionController.start();
+      print('✅ [INIT] Pipeline prêt! Flux caméra activé.');
 
       // DÉSACTIVÉ: startVideoRecording() verrouille le flux caméra sur Android!
       // On utilise UNIQUEMENT ImageStream pour l'IA
@@ -154,7 +167,11 @@ class _CameraScreenState extends State<CameraScreen> {
       setState(() => _isRecording = true);
       
       print('✅ Enregistrement commencé - IA activée (ImageStream uniquement, 5 FPS)');
+    } on TimeoutException catch (e) {
+      print('❌ [TIMEOUT] $e');
+      _showErrorSnackBar('استغرق التحميل وقتاً طويلاً جداً: $e');
     } catch (e) {
+      print('❌ [ERROR] Erreur pendant l\'initialisation: $e');
       _showErrorSnackBar('تعذر بدء التسجيل: $e');
     }
   }
@@ -201,75 +218,6 @@ class _CameraScreenState extends State<CameraScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _testMediaPipe() async {
-    print('\n[DEBUG_TEST] ========== Testing MediaPipe ==========');
-    try {
-      // Initialize MediaPipe
-      final mediaPipeService = MediaPipeService();
-      await mediaPipeService.initialize();
-      print('[DEBUG_TEST] MediaPipe initialized');
-
-      // Try to load image from assets
-      const imagePath = 'assets/test_image.jpg';
-      
-      // Check if file exists
-      final file = File(imagePath);
-      if (!file.existsSync()) {
-        print('[DEBUG_TEST] Image file not found at: $imagePath');
-        print('[DEBUG_TEST] Creating test with empty bytes for demo...');
-        
-        // Create empty bytes for testing
-        final emptyBytes = Uint8List(0);
-        final features = await mediaPipeService.detectFrameFeatures(emptyBytes);
-        print('[DEBUG_TEST] Result with empty bytes: ${features.length} features (all zeros expected)');
-        return;
-      }
-
-      // Read image
-      final imageBytes = await file.readAsBytes();
-      print('[DEBUG_TEST] Image loaded: ${imageBytes.length} bytes');
-
-      // Test MediaPipe
-      print('[DEBUG_TEST] Testing MediaPipe.detectFrameFeatures()...');
-      final features = await mediaPipeService.detectFrameFeatures(imageBytes);
-
-      // Analyze results
-      print('[DEBUG_TEST] ========== Results ==========');
-      print('[DEBUG_TEST] Features count: ${features.length}');
-      print('[DEBUG_TEST] Expected: 126 (2 hands × 21 landmarks × 3 coords)');
-
-      final nonZeroCount = features.where((f) => f != 0.0).length;
-      print('[DEBUG_TEST] Non-zero features: $nonZeroCount / ${features.length}');
-
-      if (nonZeroCount == 0) {
-        print('[DEBUG_TEST] WARNING: No landmarks detected (all zeros)');
-      } else {
-        print('[DEBUG_TEST] OK: Landmarks detected!');
-      }
-
-      // Analyze each hand
-      print('[DEBUG_TEST] ========== Hand Analysis ==========');
-      final leftHand = features.sublist(0, 63);
-      final rightHand = features.sublist(63, 126);
-      final leftNonZero = leftHand.where((f) => f != 0.0).length;
-      final rightNonZero = rightHand.where((f) => f != 0.0).length;
-
-      print('[DEBUG_TEST] Left hand (0-62): $leftNonZero / 63 non-zero values');
-      print('[DEBUG_TEST] Right hand (63-125): $rightNonZero / 63 non-zero values');
-
-      // Print sample values
-      print('[DEBUG_TEST] ========== Sample Features ==========');
-      for (int i = 0; i < 10 && i < features.length; i++) {
-        print('[DEBUG_TEST] Feature[$i]: ${features[i].toStringAsFixed(4)}');
-      }
-
-      print('[DEBUG_TEST] ========== Test Complete ==========\n');
-    } catch (e) {
-      print('[DEBUG_TEST] ERROR: $e');
-      print('[DEBUG_TEST] Stack trace: ${StackTrace.current}');
-    }
   }
 
   void _showErrorSnackBar(String message) {
@@ -456,7 +404,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   ),
                 ),
 
-              // Detected sign box
+              // Detected sign box - DYNAMIC
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -470,8 +418,8 @@ class _CameraScreenState extends State<CameraScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Label row
-                    const Row(
+                    // Label row with dynamic confidence
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
@@ -479,19 +427,34 @@ class _CameraScreenState extends State<CameraScreen> {
                           style: TextStyle(fontSize: 14, color: Colors.black54),
                         ),
                         SizedBox(width: 6),
-                        Text('[*]', style: TextStyle(fontSize: 16)),
+                        // ✅ DYNAMIC: Show confidence percentage
+                        Text(
+                          _lastRecognitionResult != null
+                              ? '[${(_lastRecognitionResult!.primaryConfidence * 100).toStringAsFixed(0)}%]'
+                              : '[انتظر...]',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: _lastRecognitionResult != null 
+                                ? (_lastRecognitionResult!.primaryConfidence > 0.7 
+                                    ? Colors.green 
+                                    : Colors.orange)
+                                : Colors.grey,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 10),
-                    // Detected text
-                    const Align(
+                    // ✅ DYNAMIC: Detected gesture name in Arabic
+                    Align(
                       alignment: Alignment.centerRight,
                       child: Text(
-                        'مرحباً، كيف حالك اليوم؟',
+                        _lastRecognitionResult?.primaryGestureAr ?? 'في انتظار الإشارة...',
                         textAlign: TextAlign.right,
                         style: TextStyle(
                           fontSize: 18,
-                          color: Colors.black87,
+                          color: _lastRecognitionResult != null 
+                              ? Colors.black87 
+                              : Colors.black54,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

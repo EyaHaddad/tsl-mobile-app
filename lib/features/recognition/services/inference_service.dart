@@ -7,7 +7,7 @@ class InferenceConfig {
   final int maxFps;
 
   const InferenceConfig({
-    this.confidenceThreshold = 0.5,
+    this.confidenceThreshold = 0.30, // 🔽 BAISSÉ À 0.30 pour détecter les résultats "hésitants"
     this.smoothWindowSize = 5,
     this.maxFps = 15,
   });

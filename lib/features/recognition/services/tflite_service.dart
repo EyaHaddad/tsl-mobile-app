@@ -16,7 +16,6 @@ class TFLiteService {
   bool _isInitialized = false;
   LstmDatasetMetadata? _metadata;
   Interpreter? _interpreter;
-  String? _modelPath;
 
   TFLiteService();
 
@@ -26,8 +25,6 @@ class TFLiteService {
     String metadataAssetPath = defaultMetadataAssetPath,
   }) async {
     try {
-      _modelPath = modelPath;
-
       // Validate model file exists (if path is a file)
       if (!modelPath.startsWith('assets/')) {
         final modelFile = File(modelPath);
@@ -40,6 +37,15 @@ class TFLiteService {
       _metadata = await _loadMetadata(metadataAssetPath);
       if (_metadata == null || _metadata!.classNames.isEmpty) {
         throw Exception('Invalid metadata: missing class names');
+      }
+
+      // 🔍 DEBUG: Vérifier le mapping des classes
+      print('🏷️ [CLASS_MAPPING] ${_metadata!.classNames.length} signes chargés:');
+      for (int i = 0; i < _metadata!.classNames.length && i < 5; i++) {
+        print('  Index $i → "${_metadata!.classNames[i]}"');
+      }
+      if (_metadata!.classNames.length > 5) {
+        print('  ... et ${_metadata!.classNames.length - 5} autres');
       }
 
       // Load TFLite model
@@ -166,6 +172,10 @@ class TFLiteService {
 
       final gestureAr = _metadata!.getGestureNameAr(gesture);
 
+      // 🔍 DEBUG: Afficher le top-3 des prédictions
+      print('🧠 [INFERENCE_DEBUG] Top prediction: "$gesture" (Index $primaryIdx) | Confiance: ${(confidence * 100).toStringAsFixed(1)}%');
+      print('🎯 [RESULT] Signe détecté : $gesture ($gestureAr) | Confiance : ${(confidence * 100).toStringAsFixed(1)}%');
+
       return _buildResultData(
         gesture: gesture,
         gestureAr: gestureAr,
@@ -277,6 +287,11 @@ class TFLiteService {
         // Use modulo to always point to the correct feature index (0-125)
         // regardless of which frame we're on (frame 0-9)
         final featureIdx = i % numFeatures;
+        
+        // ✅ POINT C: Debug modulo arithmetic (sample every 126 indices)
+        if (i > 0 && i % 126 == 0) {
+          print('[MODULO_DEBUG] Transition at index $i: feature reset to index 0');
+        }
         
         final normalized =
             (sequence[i] - scalerMean[featureIdx]) / scalerScale[featureIdx];

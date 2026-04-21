@@ -246,22 +246,60 @@ class RecognitionController {
       }
 
       // ═══════════════════════════════════════════════════════════════════════════
-      // STEP 2: LSTM SLIDING WINDOW BUFFER
+      // STEP 2: LSTM SLIDING WINDOW BUFFER (Fenêtre Glissante)
       // ═══════════════════════════════════════════════════════════════════════════
       if (hasValidLandmarks && frameFeatures.isNotEmpty) {
+        // ✅ FORCER LA COMPLÉTION À 126 FEATURES (Critical Fix)
+        // Si une seule main est détectée, on a 63 points (21 landmarks * 3 coords)
+        // Le modèle LSTM attend 126 (2 mains * 21 landmarks * 3 coords)
+        if (frameFeatures.length < 126) {
+          final missing = 126 - frameFeatures.length;
+          frameFeatures.addAll(List.filled(missing, 0.0));
+          print('补 [FIX] Vecteur complété à 126 avec $missing zéros (une main manquante)');
+        }
+        
+        if (frameFeatures.length > 126) {
+          print('⚠️ [WARNING] frameFeatures dépasse 126: ${frameFeatures.length}');
+          frameFeatures.removeRange(126, frameFeatures.length);
+        }
+        
+        // ✅ POINT B: Validate padding success
+        if (frameFeatures.length != 126) {
+          print('❌ [PADDING_FAIL] Could not pad to 126, got ${frameFeatures.length}');
+          return null;
+        }
+
+        // ✅ Check for suspiciously low landmarks (data quality)
+        final nonZeroCount = frameFeatures.where((f) => f != 0.0).length;
+        if (nonZeroCount < 10) {
+          print('⚠️ [SUSPICIOUS_DATA] Only $nonZeroCount non-zero landmarks (expected ~60+)');
+        }
+
+        // ✅ POINT A: Memory - verify buffer limits
+        if (_frameBuffer.length > 15) {
+          print('⚠️ [MEMORY_WARNING] Buffer oversized: ${_frameBuffer.length} (clearing)');
+          _frameBuffer.clear();
+          return null;
+        }
+        
         // ✅ On a une main ! On l'ajoute au buffer
         _frameBuffer.add(frameFeatures);
         _frameCountMissingHand = 0; // Reset le compteur de main perdue
-        print('📦 [BUFFER] Frame ajoutée (${_frameBuffer.length}/$_requiredFrames)');
         
-        // Si on n'a pas assez de frames, attendre
-        if (_frameBuffer.length < _requiredFrames) {
-          return null; // Buffer pas plein, pas d'inférence
+        // FENÊTRE GLISSANTE: Garder MAX 10 frames en enlevant la plus ancienne si dépasse
+        if (_frameBuffer.length > _requiredFrames) {
+          _frameBuffer.removeAt(0);
+          print('📦 [BUFFER] Sliding: Removed oldest, now ${_frameBuffer.length}/$_requiredFrames');
+        } else {
+          print('📦 [BUFFER] Accumulation: ${_frameBuffer.length}/$_requiredFrames');
         }
         
-        // ✅ BUFFER PLEIN! Prêt pour inférence LSTM
-        print('🎯 [BUFFER] PLEIN! ${_frameBuffer.length} frames prêtes pour LSTM');
-        _bufferFilledCount++;
+        // DÉCLENCHEMENT DE L'INFÉRENCE quand buffer plein ET pas déjà occupé
+        if (_frameBuffer.length == _requiredFrames && !_isBusy) {
+          await _runInference();
+        }
+        
+        return null; // Pas de résultat ici, _runInference retourne async
         
       } else {
         // ❌ Pas de main détectée
@@ -281,46 +319,54 @@ class RecognitionController {
         }
         return null;
       }
+    } catch (e) {
+      if (kDebugMode) print('Inference pipeline error: $e');
+      return null;
+    }
+  }
 
-      // ═══════════════════════════════════════════════════════════════════════════
-      // STEP 3: LSTM INFERENCE
-      // ═══════════════════════════════════════════════════════════════════════════
-      final sequenceInput = _frameBuffer;
-      
-      // Vérification de sécurité
-      if (sequenceInput.length != _requiredFrames) {
-        print('❌ [LSTM] Invalid buffer size: ${sequenceInput.length}/$_requiredFrames');
-        return null;
+  /// ═══════════════════════════════════════════════════════════════════════════
+  /// STEP 3: LSTM INFERENCE (Méthode séparée pour isolation)
+  /// ═══════════════════════════════════════════════════════════════════════════
+  Future<void> _runInference() async {
+    _isBusy = true;
+    
+    try {
+      // Sécurité: Vérifier que le buffer est toujours plein
+      if (_frameBuffer.length != _requiredFrames) {
+        print('❌ [LSTM] Invalid buffer size: ${_frameBuffer.length}/$_requiredFrames');
+        return;
       }
 
       _inferenceCount++;
-      print('🧠 [LSTM] Inférence #$_inferenceCount | Shape: [${sequenceInput.length}, ${sequenceInput[0].length}]');
+      
+      // Créer une copie profonde pour éviter les conflits de mémoire
+      // (le buffer continue à être modifié pendant l'inférence)
+      final inputSequence = List<List<double>>.from(_frameBuffer);
+      
+      print('🧠 [LSTM] Inférence #$_inferenceCount | Shape: [${inputSequence.length}, ${inputSequence[0].length}]');
       final stopwatch = Stopwatch()..start();
-      final rawResult = await tfliteService.runInference(sequenceInput);
+      
+      final rawResult = await tfliteService.runInference(inputSequence);
+      
       stopwatch.stop();
       print('✓ [LSTM] Inférence #$_inferenceCount terminée in ${stopwatch.elapsedMilliseconds}ms');
 
       // ═══════════════════════════════════════════════════════════════════════════
-      // STEP 4: SLIDING WINDOW - Prépare le buffer pour la prochaine inférence
+      // STEP 4: POST-PROCESSING
       // ═══════════════════════════════════════════════════════════════════════════
-      // Option A: FENÊTRE FIXE - Vider complètement (gestes distincts)
-      // _frameBuffer.clear();
+      final postProcessedResult = inferenceService.applyPostProcessing(rawResult);
       
-      // Option B: FENÊTRE GLISSANTE - Enlever le frame le plus ancien (plus réactif)
-      _frameBuffer.removeAt(0);
-      print('📊 [BUFFER] Sliding: Removed oldest, now ${_frameBuffer.length}/$_requiredFrames frames');
-
-      // ═══════════════════════════════════════════════════════════════════════════
-      // STEP 5: POST-PROCESSING
-      // ═══════════════════════════════════════════════════════════════════════════
-      final postProcessedResult = inferenceService.applyPostProcessing(
-        rawResult,
-      );
-
-      return postProcessedResult;
+      // Publier le résultat via le stream pour la UI
+      if (postProcessedResult != null && postProcessedResult.primaryConfidence > 0.3) {
+        print('🎯 [RESULT] ${postProcessedResult.primaryGesture} | Confiance: ${(postProcessedResult.primaryConfidence * 100).toStringAsFixed(1)}%');
+        _resultController.add(postProcessedResult);
+      }
+      
     } catch (e) {
-      if (kDebugMode) print('Inference pipeline error: $e');
-      return null;
+      print('❌ [ERROR] Erreur pendant l\'inférence LSTM: $e');
+    } finally {
+      _isBusy = false; // TRÈS IMPORTANT: Libérer le verrou quoi qu'il arrive
     }
   }
 
