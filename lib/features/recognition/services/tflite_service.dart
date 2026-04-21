@@ -247,22 +247,41 @@ class TFLiteService {
 
   /// Normalize sequence using scaler mean and scale from metadata
   /// Applies z-score normalization: (x - mean) / scale
+  /// 
+  /// IMPORTANT: The sequence is flattened (1260 elements = 10 frames * 126 features).
+  /// The scaler has only 126 elements (per-feature normalization).
+  /// We use modulo (%) to apply the 126-element scaler across all 1260 flattened values.
   List<double> _normalizeSequence(List<double> sequence) {
     final scalerMean = _metadata!.scalerMean;
     final scalerScale = _metadata!.scalerScale;
+    final numFeatures = _metadata!.numFeatures; // Should be 126
 
-    if (sequence.length != scalerMean.length ||
-        sequence.length != scalerScale.length) {
+    // Safety check: ensure scaler dimensions match the expected feature count
+    if (scalerMean.length != numFeatures || scalerScale.length != numFeatures) {
       throw Exception(
-          'Sequence length (${sequence.length}) does not match scaler dimensions '
-          '(mean: ${scalerMean.length}, scale: ${scalerScale.length})');
+          'Scaler dimension mismatch: Expected $numFeatures features, '
+          'but got mean length ${scalerMean.length} and scale length ${scalerScale.length}');
+    }
+
+    // Expected sequence length after flattening: seqLen * numFeatures (10 * 126 = 1260)
+    final expectedLength = _metadata!.seqLen * numFeatures;
+    if (sequence.length != expectedLength) {
+      throw Exception(
+          'Sequence length mismatch: Expected $expectedLength (${_metadata!.seqLen} frames * $numFeatures features), '
+          'but got ${sequence.length}');
     }
 
     return List<double>.generate(
-      sequence.length,
+      sequence.length, // 1260 elements
       (i) {
-        final normalized = (sequence[i] - scalerMean[i]) / scalerScale[i];
-        // Clamp to reasonable range to prevent extreme values
+        // Use modulo to always point to the correct feature index (0-125)
+        // regardless of which frame we're on (frame 0-9)
+        final featureIdx = i % numFeatures;
+        
+        final normalized =
+            (sequence[i] - scalerMean[featureIdx]) / scalerScale[featureIdx];
+        
+        // Clamp to reasonable range to prevent extreme values from outliers
         return normalized.clamp(-10.0, 10.0);
       },
     );
