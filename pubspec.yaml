@@ -95,6 +95,7 @@ flutter:
     - assets/icons/mint_hand.svg
     - assets/icons/camera_flip.svg
     - assets/data/lstm_dataset_meta.json
+    - assets/models/model_float16.tflite
 
 
   # To add assets to your application, add an assets section, like this:

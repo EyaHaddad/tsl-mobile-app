@@ -1,6 +1,7 @@
 package com.example.tsl_mobile_app
 
 import android.graphics.BitmapFactory
+import android.util.Log
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -13,7 +14,10 @@ class MainActivity : FlutterActivity() {
 	private val landmarkCountPerHand = 21
 	// 2 hands x 21 landmarks x 3 coordinates (x,y,z).
 	private val featureCountPerFrame = 126
-	private val worker = Executors.newSingleThreadExecutor()
+	// Background thread for MediaPipe inference (non-blocking)
+	private val worker = Executors.newSingleThreadExecutor { runnable ->
+		Thread(runnable, "MediaPipe-Worker").apply { isDaemon = false }
+	}
 	private var handLandmarkerHelper: HandLandmarkerHelper? = null
 
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -25,11 +29,24 @@ class MainActivity : FlutterActivity() {
 					"initializeHandLandmarker" -> {
 						worker.execute {
 							try {
+								val threadName = Thread.currentThread().name
+								Log.d(TAG, "⚙️ [INIT] Starting MediaPipe init on thread: $threadName")
+								
 								if (handLandmarkerHelper == null || handLandmarkerHelper?.isClose() == true) {
-									handLandmarkerHelper = HandLandmarkerHelper(context = applicationContext)
+									// Get confidence parameters from Flutter
+									val minHandDetectionConfidence = (call.argument<Number>("minHandDetectionConfidence") as? Number)?.toFloat() ?: 0.5f
+									val minHandPresenceConfidence = (call.argument<Number>("minHandPresenceConfidence") as? Number)?.toFloat() ?: 0.5f
+									
+									handLandmarkerHelper = HandLandmarkerHelper(
+										minHandDetectionConfidence = minHandDetectionConfidence,
+										minHandPresenceConfidence = minHandPresenceConfidence,
+										context = applicationContext
+									)
+									Log.d(TAG, "✅ [INIT] MediaPipe initialized on $threadName")
 								}
 								result.success(true)
 							} catch (e: Exception) {
+								Log.e(TAG, "❌ [INIT] MediaPipe init failed: ${e.message}", e)
 								result.error("mediapipe_init_error", e.message, null)
 							}
 						}
@@ -42,27 +59,54 @@ class MainActivity : FlutterActivity() {
 							return@setMethodCallHandler
 						}
 
+						// Execute detection on background thread to avoid blocking main thread
 						worker.execute {
 							try {
+								val threadName = Thread.currentThread().name
+								val startTime = System.currentTimeMillis()
+								Log.d(TAG, "🔍 [DETECT] Starting on thread: $threadName | Bytes: ${bytes.size}")
+								
 								if (handLandmarkerHelper == null || handLandmarkerHelper?.isClose() == true) {
+									Log.w(TAG, "⚠️ [DETECT] Helper not initialized, re-initializing...")
 									handLandmarkerHelper = HandLandmarkerHelper(context = applicationContext)
 								}
 
-								val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-								if (bitmap == null) {
-									result.error("invalid_image", "Failed to decode input image bytes.", null)
-									return@execute
+								// Check if this is a raw image (Plan Y) or compressed image
+								val isRaw = call.argument<Boolean>("isRaw") ?: false
+								val width = call.argument<Number>("width")?.toInt() ?: 320
+								val height = call.argument<Number>("height")?.toInt() ?: 240
+								val format = call.argument<String>("format") ?: "unknown"
+								val rotation = call.argument<Number>("rotation")?.toInt() ?: 0
+
+								// 1. OBTENTION DU RÉSULTAT (Type explicite)
+								val detectionResult: HandLandmarkerHelper.ResultBundle? = if (isRaw && format == "grayscale") {
+									Log.d(TAG, "🎯 [NATIVE] Mode RAW: Converting ${bytes.size} bytes (${width}x${height}, rotation: ${rotation}°)")
+									handLandmarkerHelper?.detectImageFromRawBytes(
+										bytes = bytes,
+										width = width,
+										height = height,
+										rotation = rotation,
+										isRaw = true,
+										format = "grayscale"
+									)
+								} else {
+									Log.d(TAG, "🎯 [NATIVE] Mode COMPRESSED: Decoding image bytes...")
+									val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+									if (bitmap == null) {
+										result.error("invalid_image", "Failed to decode input image bytes.", null)
+										return@execute
+									}
+									handLandmarkerHelper?.detectImage(bitmap)
 								}
 
-								// Run one-frame detection.
-								val detectionResult = handLandmarkerHelper?.detectImage(bitmap)
-								val handResult = detectionResult?.results?.firstOrNull()
-								val landmarksByHand = handResult?.landmarks() ?: emptyList()
-								val handednessByHand = handResult?.handednesses() ?: emptyList()
+								// 2. EXTRACTION DES DONNÉES (La partie qui manquait!)
+								val landmarksByHand = detectionResult?.results?.firstOrNull()?.landmarks() ?: emptyList()
+								val handednessByHand = detectionResult?.results?.firstOrNull()?.handedness() ?: emptyList()
 
 								var leftHand: List<NormalizedLandmark>? = null
 								var rightHand: List<NormalizedLandmark>? = null
 
+								// 3. TRI DES MAINS (Gauche vs Droite)
 								for (index in landmarksByHand.indices) {
 									val handedness = handednessByHand.getOrNull(index)
 										?.firstOrNull()
@@ -70,19 +114,18 @@ class MainActivity : FlutterActivity() {
 										?.lowercase()
 										?: ""
 
-									// Keep strict order expected by LSTM: left first, then right.
 									when {
 										handedness.contains("left") -> leftHand = landmarksByHand[index]
 										handedness.contains("right") -> rightHand = landmarksByHand[index]
 										leftHand == null -> leftHand = landmarksByHand[index]
-										rightHand == null -> rightHand = landmarksByHand[index]
+										else -> rightHand = landmarksByHand[index]
 									}
 								}
 
+								// 4. NORMALISATION ET PAYLOAD
 								val leftNormalized = normalizeHand(leftHand)
 								val rightNormalized = normalizeHand(rightHand)
 
-								// Flatten to 126 features in strict xyz order.
 								val frameFeatures = mutableListOf<Double>()
 								appendXyzFeatures(frameFeatures, leftNormalized)
 								appendXyzFeatures(frameFeatures, rightNormalized)
@@ -93,9 +136,12 @@ class MainActivity : FlutterActivity() {
 									"frameFeatures" to frameFeatures
 								)
 
+								val elapsed = System.currentTimeMillis() - startTime
 								if (frameFeatures.size == featureCountPerFrame) {
+									Log.d(TAG, "✅ [DETECT] Complete in ${elapsed}ms | Features: ${frameFeatures.size} | Thread: $threadName")
 									result.success(payload)
 								} else {
+									Log.w(TAG, "⚠️ [DETECT] Invalid feature count: ${frameFeatures.size}/${featureCountPerFrame}")
 									result.success(mapOf<String, Any>(
 										"leftLandmarks" to emptyList<Map<String, Double>>(),
 										"rightLandmarks" to emptyList<Map<String, Double>>(),
@@ -103,6 +149,7 @@ class MainActivity : FlutterActivity() {
 									))
 								}
 							} catch (e: Exception) {
+								Log.e(TAG, "❌ [DETECT] Error: ${e.message}", e)
 								result.error("mediapipe_detect_error", e.message, null)
 							}
 						}
@@ -111,10 +158,14 @@ class MainActivity : FlutterActivity() {
 					"disposeHandLandmarker" -> {
 						worker.execute {
 							try {
+								val threadName = Thread.currentThread().name
+								Log.d(TAG, "🧹 [DISPOSE] Cleaning up MediaPipe on thread: $threadName")
 								handLandmarkerHelper?.clearHandLandmarker()
 								handLandmarkerHelper = null
+								Log.d(TAG, "✅ [DISPOSE] MediaPipe disposed successfully")
 								result.success(true)
 							} catch (e: Exception) {
+								Log.e(TAG, "❌ [DISPOSE] Error: ${e.message}", e)
 								result.error("mediapipe_dispose_error", e.message, null)
 							}
 						}
@@ -126,9 +177,11 @@ class MainActivity : FlutterActivity() {
 	}
 
 	override fun onDestroy() {
+		Log.d(TAG, "🔌 [LIFECYCLE] MainActivity.onDestroy() - Cleaning up resources")
 		handLandmarkerHelper?.clearHandLandmarker()
 		handLandmarkerHelper = null
 		worker.shutdownNow()
+		Log.d(TAG, "✅ [LIFECYCLE] MediaPipe worker thread shut down")
 		super.onDestroy()
 	}
 
@@ -159,5 +212,9 @@ class MainActivity : FlutterActivity() {
 			features.add(landmark["y"] ?: 0.0)
 			features.add(landmark["z"] ?: 0.0)
 		}
+	}
+
+	companion object {
+		private const val TAG = "MainActivity"
 	}
 }

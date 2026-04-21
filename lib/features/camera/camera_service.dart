@@ -30,7 +30,7 @@ class CameraService {
 
   // Initializes camera list and starts a controller for the preferred lens
   Future<void> initialize({
-    ResolutionPreset resolution = ResolutionPreset.medium,
+    ResolutionPreset resolution = ResolutionPreset.low,
   }) async {
     final hasPermission = await hasCameraPermission();
     if (!hasPermission) {
@@ -54,6 +54,7 @@ class CameraService {
     );
     _selectedCameraIndex = preferredIndex >= 0 ? preferredIndex : 0;
 
+    print('[CAMERA] Initializing with ResolutionPreset.low (lightweight for Exynos)');
     await _startControllerForIndex(
       _selectedCameraIndex,
       resolution: resolution,
@@ -62,7 +63,7 @@ class CameraService {
 
   Future<void> _startControllerForIndex(
     int index, {
-    ResolutionPreset resolution = ResolutionPreset.medium,
+    ResolutionPreset resolution = ResolutionPreset.low,
   }) async {
     if (index < 0 || index >= _cameras.length) {
       throw CameraException(
@@ -90,7 +91,7 @@ class CameraService {
 
   // Switches between available cameras
   Future<void> switchCamera({
-    ResolutionPreset resolution = ResolutionPreset.medium,
+    ResolutionPreset resolution = ResolutionPreset.low,
   }) async {
     if (_cameras.length < 2) return;
 
@@ -134,10 +135,13 @@ class CameraService {
       throw CameraException('not_initialized', 'Camera is not initialized.');
     }
     if (cameraController.value.isStreamingImages) {
+      print('ℹ️ [CAMERA_SERVICE] ImageStream déjà actif');
       return;
     }
 
+    print('🎥 [CAMERA_SERVICE] Démarrage du flux image (ImageStream)...');
     await cameraController.startImageStream(onImageAvailable);
+    print('✅ [CAMERA_SERVICE] ImageStream démarré avec succès!');
   }
 
   Future<void> stopImageStream() async {
@@ -149,6 +153,7 @@ class CameraService {
       return;
     }
 
+    print('⏹️ [CAMERA_SERVICE] Arrêt du flux image');
     await cameraController.stopImageStream();
   }
 

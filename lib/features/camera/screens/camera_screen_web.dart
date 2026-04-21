@@ -45,7 +45,7 @@ class _CameraScreenWebState extends State<CameraScreenWeb>
 
       final controller = CameraController(
         cameras.first,
-        ResolutionPreset.medium,
+        ResolutionPreset.low,
         enableAudio: false,
       );
 

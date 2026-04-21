@@ -1,16 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+import 'dart:typed_data';
 import 'package:flutter/services.dart';
+import 'package:tflite_flutter/tflite_flutter.dart';
 import '../models/result_model.dart';
 
 // Service TFLite for LSTM inference
 class TFLiteService {
   static const String defaultMetadataAssetPath =
       'assets/data/lstm_dataset_meta.json';
+  static const String defaultModelPath = 'assets/models/model_float16.tflite';
 
   bool _isInitialized = false;
   LstmDatasetMetadata? _metadata;
+  Interpreter? _interpreter;
+  String? _modelPath;
 
   TFLiteService();
 
@@ -20,6 +26,8 @@ class TFLiteService {
     String metadataAssetPath = defaultMetadataAssetPath,
   }) async {
     try {
+      _modelPath = modelPath;
+
       // Validate model file exists (if path is a file)
       if (!modelPath.startsWith('assets/')) {
         final modelFile = File(modelPath);
@@ -34,9 +42,17 @@ class TFLiteService {
         throw Exception('Invalid metadata: missing class names');
       }
 
+      // Load TFLite model
+      try {
+        _interpreter = await Interpreter.fromAsset(modelPath);
+      } catch (e) {
+        throw Exception('Failed to load TFLite model from $modelPath: $e');
+      }
+
       _isInitialized = true;
     } catch (e) {
       _isInitialized = false;
+      _interpreter = null;
       throw Exception('Failed to initialize TFLite service: $e');
     }
   }
@@ -132,33 +148,30 @@ class TFLiteService {
     try {
       final startTime = DateTime.now();
 
-      // TODO: Implement actual TFLite model inference
-      // PLACEHOLDER: Replace with actual TFLite API calls
-      // 1. Load the model from _modelPath using tflite_flutter
-      // 2. Format sequence as input tensor
-      // 3. Run inference and get output logits
-      // 4. Apply softmax to get probabilities
-      // 5. Sort by confidence to get top predictions
-
-      await _performInferenceWithTimeout(timeout);
+      // Run inference with timeout protection
+      final inferenceResult = await _performInferenceWithTimeout(sequence, timeout);
 
       final processingTimeMs = DateTime.now()
           .difference(startTime)
           .inMilliseconds;
 
-      // Placeholder prediction
-      final primaryIdx = 0;
+      // Get top prediction
       final classNames = _metadata!.classNames;
+      final primaryIdx = inferenceResult['primaryIdx'] as int? ?? 0;
+      final confidence = inferenceResult['confidence'] as double? ?? 0.0;
+
       final gesture = classNames.isNotEmpty && primaryIdx < classNames.length
           ? classNames[primaryIdx]
           : 'Unknown';
 
+      final gestureAr = _metadata!.getGestureNameAr(gesture);
+
       return _buildResultData(
         gesture: gesture,
-        confidence: 0.0,
+        gestureAr: gestureAr,
+        confidence: confidence,
         sequenceLength: sequence.length,
-        debug:
-            'TFLite inference placeholder. Will implement with actual model.',
+        debug: 'Inference completed successfully.',
         processingTime: processingTimeMs,
       );
     } on TimeoutException {
@@ -178,17 +191,110 @@ class TFLiteService {
     }
   }
 
-  /// Simulated inference with timeout protection
-  /// Will be replaced with actual TFLite model execution
-  Future<void> _performInferenceWithTimeout(Duration timeout) async {
-    final completer = Completer<void>();
-    Future.delayed(Duration.zero).then((_) => completer.complete());
-    return completer.future.timeout(timeout);
+  /// Execute TFLite model inference with timeout protection
+  /// Returns map with 'primaryIdx' and 'confidence'
+  Future<Map<String, dynamic>> _performInferenceWithTimeout(
+    List<List<double>> sequence,
+    Duration timeout,
+  ) async {
+    if (_interpreter == null) {
+      throw Exception('Interpreter not initialized');
+    }
+
+    // Flatten and normalize sequence to 1D array: [seqLen * numFeatures]
+    final flatSequence = <double>[];
+    for (final frame in sequence) {
+      flatSequence.addAll(frame);
+    }
+
+    // Apply normalization (z-score): (x - mean) / scale
+    final normalizedSequence = _normalizeSequence(flatSequence);
+
+    // Create input tensor as Float32List for TFLite
+    final input = [Float32List.fromList(normalizedSequence)];
+
+    // Create output tensor for logits [1, numClasses]
+    final numClasses = _metadata!.numClasses;
+    final outputLogits = List<List<double>>.generate(
+      1,
+      (_) => List<double>.filled(numClasses, 0.0),
+    );
+
+    // Run inference with timeout
+    return Future.delayed(Duration.zero).then((_) {
+      _interpreter!.run(input, outputLogits);
+
+      // Get probabilities via softmax
+      final logits = outputLogits[0];
+      final probabilities = _applySoftmax(logits);
+
+      // Find top prediction
+      var maxIdx = 0;
+      var maxProb = probabilities[0];
+      for (int i = 1; i < probabilities.length; i++) {
+        if (probabilities[i] > maxProb) {
+          maxProb = probabilities[i];
+          maxIdx = i;
+        }
+      }
+
+      return {
+        'primaryIdx': maxIdx,
+        'confidence': maxProb.clamp(0.0, 1.0),
+      };
+    }).timeout(timeout);
+  }
+
+  /// Normalize sequence using scaler mean and scale from metadata
+  /// Applies z-score normalization: (x - mean) / scale
+  List<double> _normalizeSequence(List<double> sequence) {
+    final scalerMean = _metadata!.scalerMean;
+    final scalerScale = _metadata!.scalerScale;
+
+    if (sequence.length != scalerMean.length ||
+        sequence.length != scalerScale.length) {
+      throw Exception(
+          'Sequence length (${sequence.length}) does not match scaler dimensions '
+          '(mean: ${scalerMean.length}, scale: ${scalerScale.length})');
+    }
+
+    return List<double>.generate(
+      sequence.length,
+      (i) {
+        final normalized = (sequence[i] - scalerMean[i]) / scalerScale[i];
+        // Clamp to reasonable range to prevent extreme values
+        return normalized.clamp(-10.0, 10.0);
+      },
+    );
+  }
+
+  /// Apply softmax activation to logits
+  /// Handles edge cases like empty list or extreme values
+  List<double> _applySoftmax(List<double> logits) {
+    if (logits.isEmpty) {
+      return [];
+    }
+
+    // Find max for numerical stability
+    final maxLogit = logits.reduce((a, b) => a > b ? a : b);
+
+    // Compute stable softmax
+    final expLogits =
+        logits.map((x) => exp(x - maxLogit)).toList();
+    final sumExp = expLogits.fold<double>(0.0, (sum, v) => sum + v);
+
+    if (sumExp == 0.0 || sumExp.isNaN || sumExp.isInfinite) {
+      // Fallback: return uniform distribution
+      return List<double>.filled(logits.length, 1.0 / logits.length);
+    }
+
+    return expLogits.map((x) => x / sumExp).toList();
   }
 
   /// Helper to build result data consistently with validation
   RecognitionResultData _buildResultData({
     required String gesture,
+    String? gestureAr,
     required double confidence,
     required int sequenceLength,
     required String debug,
@@ -196,7 +302,7 @@ class TFLiteService {
   }) {
     return RecognitionResultData(
       primaryGesture: gesture,
-      primaryGestureAr: gesture,
+      primaryGestureAr: gestureAr ?? gesture,
       primaryConfidence: confidence.clamp(0.0, 1.0),
       processingTime: processingTime,
       sequenceLength: sequenceLength,
@@ -208,6 +314,8 @@ class TFLiteService {
   void dispose() {
     _isInitialized = false;
     _metadata = null;
+    _interpreter?.close();
+    _interpreter = null;
   }
 
   bool get isInitialized => _isInitialized;
@@ -234,10 +342,69 @@ class LstmDatasetMetadata {
     required this.sourcePath,
   });
 
-  // Get Arabic name for gesture (TODO: Add mapping)
+  // Get Arabic name for gesture with comprehensive mapping
   String getGestureNameAr(String gestureName) {
-    // TODO: Implement gesture name translation mapping
-    return gestureName;
+    const arabicNames = {
+      '3aslema': 'عسلامة',
+      '3ayla': 'عائلة',
+      '5adamet': 'خدمة',
+      '5al-3am': 'خال-عم',
+      '5mis': 'خمس',
+      '5ou': 'خو',
+      'a7ad': 'أحد',
+      'assam': 'السم',
+      'baladya': 'بلاديّة',
+      'banka': 'بنك',
+      'barnamjk': 'برنامج',
+      'bent': 'بنت',
+      'bou': 'بو',
+      'bousta': 'بوسطة',
+      'car': 'سيارة',
+      'chabeb': 'شباب',
+      'cv': 'سيرة ذاتية',
+      'dar': 'دار',
+      'demande': 'طلب',
+      'eben': 'إبن',
+      'enti': 'إنتي',
+      'erb3a': 'ربعة',
+      'jad': 'جد',
+      'jadda': 'جدة',
+      'jom3a': 'جمعة',
+      'karhba': 'كرهبة',
+      'labes': 'لابس',
+      'louage': 'لواج',
+      'lyoum': 'اليوم',
+      'ma7kma': 'محكمة',
+      'mar2a': 'مرأة',
+      'mar7ba': 'مرحبا',
+      'metro': 'متروا',
+      'mostawsaf': 'مستوصف',
+      'n3awnek': 'نعاونك',
+      'nekteblk': 'نكتبلك',
+      'non': 'لا',
+      'o5t': 'أخت',
+      'om': 'أم',
+      'oui': 'نعم',
+      'radio': 'راديو',
+      'sbitar': 'سبيطار',
+      'se7a': 'صحة',
+      'sebt': 'السبت',
+      'siye7a': 'سياحة',
+      't7eb': 'تحب',
+      'ta3lim': 'تعليم',
+      'ta3raf': 'تعرف',
+      'ta9ra': 'تقرا',
+      'taxi': 'تاكسي',
+      'telvza': 'تلفزة',
+      'tfol': 'طفل',
+      'tha9afa': 'ثقافة',
+      'thleth': 'ثلاثة',
+      'thnin': 'إثنين',
+      'train': 'قطار',
+      'wzara': 'وزارة',
+    };
+
+    return arabicNames[gestureName] ?? gestureName;
   }
 
   int get numClasses => classNames.length;

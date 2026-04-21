@@ -1,8 +1,17 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tsl_mobile_app/features/recognition/screens/result_screen.dart';
+import 'package:tsl_mobile_app/features/recognition/models/result_model.dart';
+import 'package:tsl_mobile_app/features/recognition/services/recognition_controller.dart';
+import 'package:tsl_mobile_app/features/recognition/services/tflite_service.dart';
+import 'package:tsl_mobile_app/features/recognition/services/mediapipe_service.dart';
+import 'package:tsl_mobile_app/features/recognition/services/inference_service.dart';
+import 'package:tsl_mobile_app/features/recognition/models/managers/sequence_manager.dart';
 import 'package:tsl_mobile_app/core/routes/transition_routes.dart';
 import 'package:tsl_mobile_app/features/camera/screens/camera_screen_web.dart';
 import 'package:tsl_mobile_app/features/camera/camera_service.dart';
@@ -17,11 +26,14 @@ class CameraScreen extends StatefulWidget {
 
 class _CameraScreenState extends State<CameraScreen> {
   late final CameraService _cameraService;
+  late RecognitionController _recognitionController;
+  late StreamSubscription<RecognitionResultData> _resultSubscription;
   Future<void>? _initializeControllerFuture;
 
   bool _isRecording = false;
   bool _isSwitchingCamera = false;
   String? _cameraError;
+  RecognitionResultData? _lastRecognitionResult;
 
   @override
   void initState() {
@@ -30,14 +42,19 @@ class _CameraScreenState extends State<CameraScreen> {
       preferredLensDirection: CameraLensDirection.back,
     );
 
+    // Initialize camera
     if (!kIsWeb) {
       _initializeControllerFuture = _initCamera();
     }
+
+    // RecognitionController will be initialized later in _startRecording
+    // when we have metadata loaded
   }
 
   Future<void> _initCamera() async {
     try {
-      await _cameraService.initialize(resolution: ResolutionPreset.medium);
+      // Use low resolution for better performance on mid-range devices
+      await _cameraService.initialize(resolution: ResolutionPreset.low);
       if (!mounted) return;
       setState(() {
         _cameraError = null;
@@ -53,6 +70,16 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   void dispose() {
+    try {
+      _resultSubscription.cancel();
+    } catch (_) {
+      // Subscription might not be initialized yet
+    }
+    try {
+      _recognitionController.dispose();
+    } catch (_) {
+      // RecognitionController might not be initialized yet
+    }
     _cameraService.dispose();
     super.dispose();
   }
@@ -87,11 +114,48 @@ class _CameraScreenState extends State<CameraScreen> {
     }
 
     try {
-      await _cameraService.startVideoRecording();
+      // Load metadata and create SequenceManager with correct scaler values
+      final sequenceManager = await SequenceManager.fromDefaultMetaAsset();
+
+      // Initialize recognition controller with proper metadata
+      _recognitionController = RecognitionController(
+        cameraService: _cameraService,
+        mediaPipeService: MediaPipeService(),
+        tfliteService: TFLiteService(),
+        sequenceManager: sequenceManager,
+        inferenceService: InferenceService(),
+      );
+
+      // Listen to recognition results from TFLite
+      _resultSubscription = _recognitionController.resultStream.listen((result) {
+        // DEBUG: Verify AI is processing frames
+        print('🔥 IA en action : ${result.primaryGestureAr} (Confiance: ${(result.primaryConfidence * 100).toStringAsFixed(1)}%)');
+        if (mounted) {
+          setState(() {
+            _lastRecognitionResult = result;
+          });
+        }
+      });
+
+      // Initialize the controller with model path
+      await _recognitionController.initialize(
+        modelPath: TFLiteService.defaultModelPath,
+        metadataAssetPath: TFLiteService.defaultMetadataAssetPath,
+      );
+
+      // Start live recognition (ImageStream pour l'IA)
+      await _recognitionController.start();
+
+      // DÉSACTIVÉ: startVideoRecording() verrouille le flux caméra sur Android!
+      // On utilise UNIQUEMENT ImageStream pour l'IA
+      // await _cameraService.startVideoRecording();
+      
       if (!mounted) return;
       setState(() => _isRecording = true);
-    } catch (_) {
-      _showErrorSnackBar('تعذر بدء التسجيل');
+      
+      print('✅ Enregistrement commencé - IA activée (ImageStream uniquement, 5 FPS)');
+    } catch (e) {
+      _showErrorSnackBar('تعذر بدء التسجيل: $e');
     }
   }
 
@@ -101,23 +165,111 @@ class _CameraScreenState extends State<CameraScreen> {
       return;
     }
 
-    String? recordedVideoPath;
+    // Stop recognition
+    await _recognitionController.stop();
 
-    try {
-      recordedVideoPath = await _cameraService.stopVideoRecording();
-    } catch (_) {
-      _showErrorSnackBar('تعذر إنهاء التسجيل');
+    // DEBUG: Check if we have a recognition result
+    print('📊 Au moment du clic "Finir":');
+    print('   - _lastRecognitionResult: $_lastRecognitionResult');
+    if (_lastRecognitionResult != null) {
+      print('   - Signe reconnu: ${_lastRecognitionResult!.primaryGestureAr}');
+      print('   - Confiance: ${(_lastRecognitionResult!.primaryConfidence * 100).toStringAsFixed(1)}%');
+    } else {
+      print('   ⚠️ Aucun résultat! MediaPipe n\'a peut-être pas détecté les mains.');
     }
+
+    // DÉSACTIVÉ: stopVideoRecording() verrouille le flux
+    // String? recordedVideoPath;
+    // try {
+    //   recordedVideoPath = await _cameraService.stopVideoRecording();
+    // } catch (_) {
+    //   _showErrorSnackBar('تعذر إنهاء التسجيل');
+    // }
 
     if (!mounted) return;
     setState(() => _isRecording = false);
 
-    if (recordedVideoPath == null) {
-      _showErrorSnackBar('لم يتم حفظ أي ملف فيديو');
-      return;
-    }
+    // Note: recordedVideoPath n'est plus utilisé (VideoRecording désactivé)
+    // On navigue directement avec le résultat de reconnaissance
 
-    Navigator.of(context).push(FadeSlidePageRoute(page: const ResultScreen()));
+    // Navigate to result screen with the latest recognition result
+    if (!mounted) return;
+    Navigator.of(context).push(
+      FadeSlidePageRoute(
+        page: ResultScreen(
+          recognitionResult: _lastRecognitionResult,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _testMediaPipe() async {
+    print('\n[DEBUG_TEST] ========== Testing MediaPipe ==========');
+    try {
+      // Initialize MediaPipe
+      final mediaPipeService = MediaPipeService();
+      await mediaPipeService.initialize();
+      print('[DEBUG_TEST] MediaPipe initialized');
+
+      // Try to load image from assets
+      const imagePath = 'assets/test_image.jpg';
+      
+      // Check if file exists
+      final file = File(imagePath);
+      if (!file.existsSync()) {
+        print('[DEBUG_TEST] Image file not found at: $imagePath');
+        print('[DEBUG_TEST] Creating test with empty bytes for demo...');
+        
+        // Create empty bytes for testing
+        final emptyBytes = Uint8List(0);
+        final features = await mediaPipeService.detectFrameFeatures(emptyBytes);
+        print('[DEBUG_TEST] Result with empty bytes: ${features.length} features (all zeros expected)');
+        return;
+      }
+
+      // Read image
+      final imageBytes = await file.readAsBytes();
+      print('[DEBUG_TEST] Image loaded: ${imageBytes.length} bytes');
+
+      // Test MediaPipe
+      print('[DEBUG_TEST] Testing MediaPipe.detectFrameFeatures()...');
+      final features = await mediaPipeService.detectFrameFeatures(imageBytes);
+
+      // Analyze results
+      print('[DEBUG_TEST] ========== Results ==========');
+      print('[DEBUG_TEST] Features count: ${features.length}');
+      print('[DEBUG_TEST] Expected: 126 (2 hands × 21 landmarks × 3 coords)');
+
+      final nonZeroCount = features.where((f) => f != 0.0).length;
+      print('[DEBUG_TEST] Non-zero features: $nonZeroCount / ${features.length}');
+
+      if (nonZeroCount == 0) {
+        print('[DEBUG_TEST] WARNING: No landmarks detected (all zeros)');
+      } else {
+        print('[DEBUG_TEST] OK: Landmarks detected!');
+      }
+
+      // Analyze each hand
+      print('[DEBUG_TEST] ========== Hand Analysis ==========');
+      final leftHand = features.sublist(0, 63);
+      final rightHand = features.sublist(63, 126);
+      final leftNonZero = leftHand.where((f) => f != 0.0).length;
+      final rightNonZero = rightHand.where((f) => f != 0.0).length;
+
+      print('[DEBUG_TEST] Left hand (0-62): $leftNonZero / 63 non-zero values');
+      print('[DEBUG_TEST] Right hand (63-125): $rightNonZero / 63 non-zero values');
+
+      // Print sample values
+      print('[DEBUG_TEST] ========== Sample Features ==========');
+      for (int i = 0; i < 10 && i < features.length; i++) {
+        print('[DEBUG_TEST] Feature[$i]: ${features[i].toStringAsFixed(4)}');
+      }
+
+      print('[DEBUG_TEST] ========== Test Complete ==========\n');
+    } catch (e) {
+      print('[DEBUG_TEST] ERROR: $e');
+      print('[DEBUG_TEST] Stack trace: ${StackTrace.current}');
+    }
   }
 
   void _showErrorSnackBar(String message) {
@@ -327,7 +479,7 @@ class _CameraScreenState extends State<CameraScreen> {
                           style: TextStyle(fontSize: 14, color: Colors.black54),
                         ),
                         SizedBox(width: 6),
-                        Text('💡', style: TextStyle(fontSize: 16)),
+                        Text('[*]', style: TextStyle(fontSize: 16)),
                       ],
                     ),
                     const SizedBox(height: 10),

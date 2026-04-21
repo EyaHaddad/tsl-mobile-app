@@ -105,10 +105,20 @@ class SequenceManager {
     }
 
     _framesSinceLastEmit++;
-    return isReady && _framesSinceLastEmit >= realtimeStride;
+    final ready = isReady && _framesSinceLastEmit >= realtimeStride;
+    
+    // DEBUG: Log frame accumulation progress
+    if (_window.length == seqLen) {
+      print('🎯 [SEQUENCE] BUFFER REMPLI! 10/10 frames | Ready=$ready | Stride: $_framesSinceLastEmit/$realtimeStride');
+    }
+    
+    return ready;
   }
 
   bool get isReady => _window.length == seqLen;
+  
+  // DEBUG: Getter for current window length
+  int get windowLength => _window.length;
 
   // Returns shape (1, 10, 126) flattened in row-major order as float32
   Float32List? buildModelInputFloat32() {

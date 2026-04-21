@@ -26,16 +26,23 @@ class MediaPipeService {
       return;
     }
 
+    print('⚙️ [MEDIAPIPE] Initialisation en cours...');
     final initialized = await _channel.invokeMethod<bool>(
       'initializeHandLandmarker',
+      <String, dynamic>{
+        'minHandDetectionConfidence': 0.2, // PANIC MODE: très bas pour forcer détection
+        'minHandPresenceConfidence': 0.2,
+      },
     );
     if (initialized != true) {
+      print('❌ [MEDIAPIPE] Initialisation ÉCHOUÉE!');
       throw PlatformException(
         code: 'mediapipe_init_failed',
         message: 'Failed to initialize native MediaPipe hand landmarker.',
       );
     }
 
+    print('✅ [MEDIAPIPE] Initialisée avec succès');
     _isInitialized = true;
   }
 
@@ -45,7 +52,12 @@ class MediaPipeService {
   // Detect hands and return standardized landmarks ordered left hand then right hand
   // The output contains 42 landmarks (2 x 21). Missing hands are zero-filled
   // Supported input: Uint8List (encoded image bytes) or String file path
-  Future<List<HandLandmark>?> detectHands(dynamic image) async {
+  Future<List<HandLandmark>?> detectHands(
+    dynamic image, {
+    int width = 320,
+    int height = 240,
+    int rotation = 0,
+  }) async {
     if (!_isInitialized) {
       await initialize();
     }
@@ -62,7 +74,14 @@ class MediaPipeService {
     // Native side returns one payload with leftLandmarks/rightLandmarks/frameFeatures
     final raw = await _channel.invokeMethod<dynamic>(
       'detectHands',
-      <String, dynamic>{'bytes': bytes},
+      <String, dynamic>{
+        'bytes': bytes,
+        'width': width,
+        'height': height,
+        'rotation': rotation,    // ← AJOUTER rotation
+        'isRaw': true, // Indique que c'est du Plan Y direct, pas une image compressée
+        'format': 'grayscale', // Format en niveaux de gris
+      },
     );
 
     return _parseOrderedHands(raw);
@@ -70,7 +89,12 @@ class MediaPipeService {
 
   // Detect hands and return one frame vector with strict shape 126:
   // left hand lm0..20 (x,y,z), then right hand lm0..20 (x,y,z)
-  Future<List<double>> detectFrameFeatures(dynamic image) async {
+  Future<List<double>> detectFrameFeatures(
+    dynamic image, {
+    int width = 320,
+    int height = 240,
+    int rotation = 0,
+  }) async {
     if (!_isInitialized) {
       await initialize();
     }
@@ -80,35 +104,72 @@ class MediaPipeService {
     }
 
     final bytes = await _resolveImageBytes(image);
+    
+    // DIAGNOSTIC: Vérifier si la caméra envoie vraiment des données
     if (bytes == null || bytes.isEmpty) {
+      print('📸 [ERREUR] MediaPipe: Aucun octet reçu de la caméra!');
       return List<double>.filled(_featureCountPerFrame, 0.0, growable: false);
     }
 
-    // We reuse the same native method and extract the flattened features
-    final raw = await _channel.invokeMethod<dynamic>(
-      'detectHands',
-      <String, dynamic>{'bytes': bytes},
-    );
+    try {
+      // Appel natif avec mesure du temps
+      print('📱 [MEDIAPIPE_NATIVE_CALL] Envoi ${bytes.length} bytes (${width}x${height}, rotation: ${rotation}°) au code natif...');
+      final stopwatch = Stopwatch()..start();
+      final raw = await _channel.invokeMethod<dynamic>(
+        'detectHands',
+        <String, dynamic>{
+          'bytes': bytes,
+          'width': width,
+          'height': height,
+          'rotation': rotation,    // ← AJOUTER rotation
+          'isRaw': true, // Indique que c'est du Plan Y direct, pas une image compressée
+          'format': 'grayscale', // Format en niveaux de gris
+        },
+      );
+      stopwatch.stop();
+      
+      // Analyse de la réponse
+      if (raw == null) {
+        print('⚠️ [MEDIAPIPE_RESPONSE] Code natif retourné NULL après ${stopwatch.elapsedMilliseconds}ms');
+        return List<double>.filled(_featureCountPerFrame, 0.0, growable: false);
+      }
+      
+      if (raw is! Map) {
+        print('❌ [MEDIAPIPE_ERROR] Réponse invalide: not a Map, got ${raw.runtimeType}');
+        return List<double>.filled(_featureCountPerFrame, 0.0, growable: false);
+      }
 
-    if (raw is! Map) {
+      final dynamic rawFeatures = raw['frameFeatures'];
+      if (rawFeatures is! List) {
+        print('❌ [MEDIAPIPE_ERROR] frameFeatures invalide: got ${rawFeatures.runtimeType}');
+        return List<double>.filled(_featureCountPerFrame, 0.0, growable: false);
+      }
+
+      // Compter les landmarks non-zéro
+      final nonZero = rawFeatures.where((f) => (f as num?) != 0).length;
+      if (nonZero == 0) {
+        print('⚠️ [MEDIAPIPE_DETECTION] Aucun landmark après ${stopwatch.elapsedMilliseconds}ms (128 zéros)');
+      } else {
+        print('✓ [MEDIAPIPE_DETECTION] ${stopwatch.elapsedMilliseconds}ms → $nonZero landmarks détectés / 126 total');
+      }
+
+      final features = rawFeatures
+          .map((value) => (value as num?)?.toDouble() ?? 0.0)
+          .take(_featureCountPerFrame)
+          .toList(growable: false);
+
+      if (features.length != _featureCountPerFrame) {
+        print('⚠️ [MEDIAPIPE_ERROR] Mauvaise taille: ${features.length} au lieu de $_featureCountPerFrame');
+        return List<double>.filled(_featureCountPerFrame, 0.0, growable: false);
+      }
+
+      return features;
+
+    } catch (e) {
+      print('❌ [MEDIAPIPE_EXCEPTION] ${e.runtimeType}: $e');
+      print('📍 Cause: C''est peut-être que le code natif n''est pas correctement chargé');
       return List<double>.filled(_featureCountPerFrame, 0.0, growable: false);
     }
-
-    final dynamic rawFeatures = raw['frameFeatures'];
-    if (rawFeatures is! List) {
-      return List<double>.filled(_featureCountPerFrame, 0.0, growable: false);
-    }
-
-    final features = rawFeatures
-        .map((value) => (value as num?)?.toDouble() ?? 0.0)
-        .take(_featureCountPerFrame)
-        .toList(growable: false);
-
-    if (features.length != _featureCountPerFrame) {
-      return List<double>.filled(_featureCountPerFrame, 0.0, growable: false);
-    }
-
-    return features;
   }
 
   // Convert raw detection payload to standardized HandLandmark list
@@ -169,7 +230,22 @@ class MediaPipeService {
         return file.readAsBytes();
       }
     } catch (_) {
-      // Unsupported image payload type
+      // Unsupported image payload type - continue to check for CameraImage
+    }
+
+    // FALLBACK: Si on reçoit un CameraImage par erreur, extraire le plan Y
+    // (Cela ne devrait pas arriver car recognition_controller fait déjà la conversion)
+    try {
+      final planesField = image.planes;
+      if (planesField != null && (planesField as List).isNotEmpty) {
+        final bytes = (planesField as List).first.bytes;
+        if (bytes != null && bytes.isNotEmpty) {
+          print('⚠️ [MEDIAPIPE] CameraImage reçu directement - extraction plan Y...');
+          return bytes;
+        }
+      }
+    } catch (_) {
+      // Pas un CameraImage, ou pas d'accès aux plans
     }
 
     return null;

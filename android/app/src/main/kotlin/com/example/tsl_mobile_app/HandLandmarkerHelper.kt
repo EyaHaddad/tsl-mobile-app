@@ -2,7 +2,6 @@ package com.example.tsl_mobile_app
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Matrix
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.SystemClock
@@ -10,6 +9,7 @@ import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.camera.core.ImageProxy
 import com.google.mediapipe.framework.image.BitmapImageBuilder
+import com.google.mediapipe.framework.image.ImageProperties
 import com.google.mediapipe.framework.image.MPImage
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.core.Delegate
@@ -149,29 +149,26 @@ class HandLandmarkerHelper(
                 Bitmap.Config.ARGB_8888
             )
         imageProxy.use { bitmapBuffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer) }
+        val rotationDegrees = imageProxy.imageInfo.rotationDegrees
         imageProxy.close()
 
-        val matrix = Matrix().apply {
-            // Rotate the frame received from the camera to be in the same direction as it'll be shown
-            postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
-
-            // flip image if user use front camera
-            if (isFrontCamera) {
-                postScale(
-                    -1f,
-                    1f,
-                    imageProxy.width.toFloat(),
-                    imageProxy.height.toFloat()
-                )
-            }
+        // Use ImageProperties for rotation (more efficient than Matrix)
+        val imagePropertiesBuilder = ImageProperties.builder()
+            .setRotationDegrees(rotationDegrees)
+        
+        // Flip image if user uses front camera
+        if (isFrontCamera) {
+            imagePropertiesBuilder.setOriginIsTopLeft(true)
         }
-        val rotatedBitmap = Bitmap.createBitmap(
-            bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height,
-            matrix, true
-        )
-
-        // Convert the input Bitmap object to an MPImage object to run inference
-        val mpImage = BitmapImageBuilder(rotatedBitmap).build()
+        
+        val imageProperties = imagePropertiesBuilder.build()
+        
+        Log.d(TAG, "🔄 [LIVESTREAM] Rotation: ${rotationDegrees}° | FrontCamera: $isFrontCamera")
+        
+        // Convert the input Bitmap object to an MPImage object with ImageProperties
+        val mpImage = BitmapImageBuilder(bitmapBuffer)
+            .setImageProperties(imageProperties)
+            .build()
 
         detectAsync(mpImage, frameTime)
     }
@@ -316,6 +313,82 @@ class HandLandmarkerHelper(
             "Hand Landmarker failed to detect."
         )
         return null
+    }
+
+    // NEW: Detect from raw image bytes (e.g., Plan Y from camera stream)
+    // Converts raw grayscale bytes to bitmap then runs inference
+    fun detectImageFromRawBytes(
+        bytes: ByteArray,
+        width: Int,
+        height: Int,
+        rotation: Int = 0,
+        isRaw: Boolean = true,
+        format: String = "grayscale"
+    ): ResultBundle? {
+        if (runningMode != RunningMode.IMAGE) {
+            throw IllegalArgumentException(
+                "Attempting to call detectImageFromRawBytes" +
+                        " while not using RunningMode.IMAGE"
+            )
+        }
+
+        val startTime = SystemClock.uptimeMillis()
+
+        // Convert raw grayscale bytes to ARGB_8888 bitmap
+        val bitmap = try {
+            if (format == "grayscale" && isRaw) {
+                // Create a grayscale bitmap from raw Y-plane bytes
+                // Each byte represents one grayscale pixel (0-255)
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                val pixels = IntArray(width * height)
+                
+                // Convert grayscale bytes to ARGB pixels
+                for (i in bytes.indices) {
+                    val gray = bytes[i].toInt() and 0xFF // Unsigned byte
+                    pixels[i] = android.graphics.Color.rgb(gray, gray, gray)
+                }
+                
+                bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+                bitmap
+            } else {
+                // Fallback: try to decode as image format (shouldn't happen with isRaw=true)
+                Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to convert raw bytes to bitmap: ${e.message}")
+            return null
+        }
+
+        // Run inference on the created bitmap
+        val rgbBitmap = bitmap
+        
+        // Create MPImage with ImageProperties for rotation (more efficient than Matrix rotation)
+        val imageProperties = ImageProperties.builder()
+            .setRotationDegrees(rotation)
+            .build()
+        
+        Log.d(TAG, "🔄 [ROTATION] Setting rotation: ${rotation}° via ImageProperties")
+        val mpImage = BitmapImageBuilder(rgbBitmap)
+            .setImageProperties(imageProperties)
+            .build()
+
+        // Execute detection and wrap result properly
+        val detectionResult = handLandmarker?.detect(mpImage)
+        
+        if (detectionResult != null) {
+            val inferenceTimeMs = SystemClock.uptimeMillis() - startTime
+            return ResultBundle(
+                listOf(detectionResult),
+                inferenceTimeMs,
+                height,
+                width
+            )
+        } else {
+            handLandmarkerHelperListener?.onError(
+                "Hand Landmarker failed to detect from raw bytes."
+            )
+            return null
+        }
     }
 
     // Return the landmark result to this HandLandmarkerHelper's caller
