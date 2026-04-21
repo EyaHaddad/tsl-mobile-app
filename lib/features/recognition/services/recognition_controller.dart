@@ -31,6 +31,15 @@ class RecognitionController {
   int _framesWithValidLandmarks = 0;
   int _inferenceCount = 0;
 
+  // HAND LOSS TRACKING
+  int _frameCountMissingHand = 0; // Compte les frames sans main détectée
+  static const int _maxMissingHandFrames = 5; // Reset buffer si main perdue > 5 frames
+
+  // LSTM SLIDING WINDOW BUFFER
+  final List<List<double>> _frameBuffer = []; // Stocke les 126 landmarks de chaque frame
+  static const int _requiredFrames = 10; // Taille de la fenêtre glissante LSTM
+  int _bufferFilledCount = 0; // Compte combien de fois le buffer a été plein et inférence lancée
+
   // Stream results for UI to listen
   late final StreamController<RecognitionResultData> _resultController;
 
@@ -77,9 +86,16 @@ class RecognitionController {
     _framesProcessed = 0;
     _framesWithValidLandmarks = 0;
     _inferenceCount = 0;
+    
+    // LSTM buffer initialization
+    _frameBuffer.clear();
+    _bufferFilledCount = 0;
+    _frameCountMissingHand = 0; // Reset hand loss counter
+    
     print('═══════════════════════════════════════════════════════════');
     print('🎬 [START] Pipeline commencée - en écoute des frames caméra');
     print('🔒 [LOCK] Verrou initialisé (prêt à recevoir frames)');
+    print('📊 [BUFFER] LSTM buffer initialisé (0/$_requiredFrames frames)');
     print('═══════════════════════════════════════════════════════════');
     try {
       await cameraService.startImageStream((CameraImage image) async {
@@ -186,7 +202,10 @@ class RecognitionController {
     print('📊 [STATS] Frames traitées: $_framesProcessed');
     print('📊 [STATS] Frames avec landmarks: $_framesWithValidLandmarks');
     print('📊 [STATS] Inférences TFLite: $_inferenceCount');
+    print('📊 [BUFFER] Buffer rempli $_bufferFilledCount fois');
+    print('📊 [BUFFER] Frames restantes au stop: ${_frameBuffer.length}/$_requiredFrames');
     print('═══════════════════════════════════════════════════════════');
+    _frameBuffer.clear();
   }
 
   // Processes one frame bytes and returns prediction when a full window is ready
@@ -226,30 +245,74 @@ class RecognitionController {
         print('⚠️ [MEDIAPIPE] Aucun landmark détecté - frame tous les zéros');
       }
 
-      // Step 2: Add features to sequence buffer
-      // Returns true when window is ready and stride condition is met
-      final shouldInfer = sequenceManager.addFrameFeatures(frameFeatures);
-      
-      // DEBUG: Show buffer status
-      print('📦 [BUFFER] Accumulation: ${sequenceManager.windowLength}/10 frames | Landmarks: $hasValidLandmarks | Prêt: $shouldInfer');
-      
-      if (!shouldInfer) {
-        return null; // Window not ready yet
-      }
-
-      // Step 3: Build normalized sequence (10 x 126)
-      final sequenceInput = sequenceManager.buildModelInput2D();
-      if (sequenceInput == null) {
+      // ═══════════════════════════════════════════════════════════════════════════
+      // STEP 2: LSTM SLIDING WINDOW BUFFER
+      // ═══════════════════════════════════════════════════════════════════════════
+      if (hasValidLandmarks && frameFeatures.isNotEmpty) {
+        // ✅ On a une main ! On l'ajoute au buffer
+        _frameBuffer.add(frameFeatures);
+        _frameCountMissingHand = 0; // Reset le compteur de main perdue
+        print('📦 [BUFFER] Frame ajoutée (${_frameBuffer.length}/$_requiredFrames)');
+        
+        // Si on n'a pas assez de frames, attendre
+        if (_frameBuffer.length < _requiredFrames) {
+          return null; // Buffer pas plein, pas d'inférence
+        }
+        
+        // ✅ BUFFER PLEIN! Prêt pour inférence LSTM
+        print('🎯 [BUFFER] PLEIN! ${_frameBuffer.length} frames prêtes pour LSTM');
+        _bufferFilledCount++;
+        
+      } else {
+        // ❌ Pas de main détectée
+        print('⚠️ [BUFFER] Frame ignorée (Pas de landmarks)');
+        
+        // Optionnel : Si on perd la main trop longtemps, on reset
+        if (_frameBuffer.isNotEmpty) {
+          _frameCountMissingHand++;
+          print('⏱️ [BUFFER] Main perdue: $_frameCountMissingHand/$_maxMissingHandFrames frames');
+          
+          if (_frameCountMissingHand > _maxMissingHandFrames) {
+            // Si on perd la main pendant trop longtemps
+            _frameBuffer.clear();
+            print('🧹 [BUFFER] Reset (Main perdue $_frameCountMissingHand frames)');
+            _frameCountMissingHand = 0; // Reset le compteur
+          }
+        }
         return null;
       }
 
-      // Step 4: Run LSTM inference (TFLite)
-      _inferenceCount++;
-      print('🧠 [TFLITE] Lancement inférence #$_inferenceCount avec 10 frames accumulés');
-      final rawResult = await tfliteService.runInference(sequenceInput);
-      print('✓ [TFLITE] Inférence #$_inferenceCount terminée');
+      // ═══════════════════════════════════════════════════════════════════════════
+      // STEP 3: LSTM INFERENCE
+      // ═══════════════════════════════════════════════════════════════════════════
+      final sequenceInput = _frameBuffer;
+      
+      // Vérification de sécurité
+      if (sequenceInput.length != _requiredFrames) {
+        print('❌ [LSTM] Invalid buffer size: ${sequenceInput.length}/$_requiredFrames');
+        return null;
+      }
 
-      // Step 5: Apply post-processing (thresholding, smoothing, FPS limiting)
+      _inferenceCount++;
+      print('🧠 [LSTM] Inférence #$_inferenceCount | Shape: [${sequenceInput.length}, ${sequenceInput[0].length}]');
+      final stopwatch = Stopwatch()..start();
+      final rawResult = await tfliteService.runInference(sequenceInput);
+      stopwatch.stop();
+      print('✓ [LSTM] Inférence #$_inferenceCount terminée in ${stopwatch.elapsedMilliseconds}ms');
+
+      // ═══════════════════════════════════════════════════════════════════════════
+      // STEP 4: SLIDING WINDOW - Prépare le buffer pour la prochaine inférence
+      // ═══════════════════════════════════════════════════════════════════════════
+      // Option A: FENÊTRE FIXE - Vider complètement (gestes distincts)
+      // _frameBuffer.clear();
+      
+      // Option B: FENÊTRE GLISSANTE - Enlever le frame le plus ancien (plus réactif)
+      _frameBuffer.removeAt(0);
+      print('📊 [BUFFER] Sliding: Removed oldest, now ${_frameBuffer.length}/$_requiredFrames frames');
+
+      // ═══════════════════════════════════════════════════════════════════════════
+      // STEP 5: POST-PROCESSING
+      // ═══════════════════════════════════════════════════════════════════════════
       final postProcessedResult = inferenceService.applyPostProcessing(
         rawResult,
       );
@@ -259,6 +322,26 @@ class RecognitionController {
       if (kDebugMode) print('Inference pipeline error: $e');
       return null;
     }
+  }
+
+  /// DEBUG HELPER: Print buffer state
+  void debugPrintBufferState() {
+    print('════════════════════════════════════════════════════════════');
+    print('📊 [BUFFER_DEBUG] Current state:');
+    print('  Frames in buffer: ${_frameBuffer.length}/$_requiredFrames');
+    print('  Buffer filled count: $_bufferFilledCount');
+    print('  Total inferences: $_inferenceCount');
+    
+    if (_frameBuffer.isEmpty) {
+      print('  Buffer is EMPTY');
+    } else {
+      for (int i = 0; i < _frameBuffer.length; i++) {
+        final nonZero = _frameBuffer[i].where((f) => f != 0.0).length;
+        final total = _frameBuffer[i].length;
+        print('  Frame $i: $total features, $nonZero non-zero');
+      }
+    }
+    print('════════════════════════════════════════════════════════════');
   }
 
   // Get current inference metrics (FPS, latency, dropped frames)
