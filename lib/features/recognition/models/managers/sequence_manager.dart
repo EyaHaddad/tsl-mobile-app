@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 
 // Manages the 10-frame sliding window sent to the LSTM
-// 
+//
 // Simple goal:
 // - keep exactly 10 frames
 // - return data in shape (1, 10, 126)
@@ -106,17 +106,19 @@ class SequenceManager {
 
     _framesSinceLastEmit++;
     final ready = isReady && _framesSinceLastEmit >= realtimeStride;
-    
+
     // DEBUG: Log frame accumulation progress
     if (_window.length == seqLen) {
-      print('🎯 [SEQUENCE] BUFFER REMPLI! 10/10 frames | Ready=$ready | Stride: $_framesSinceLastEmit/$realtimeStride');
+      print(
+        '🎯 [SEQUENCE] BUFFER REMPLI! 10/10 frames | Ready=$ready | Stride: $_framesSinceLastEmit/$realtimeStride',
+      );
     }
-    
+
     return ready;
   }
 
   bool get isReady => _window.length == seqLen;
-  
+
   // DEBUG: Getter for current window length
   int get windowLength => _window.length;
 
@@ -160,6 +162,19 @@ class SequenceManager {
           }
           return normalized;
         })
+        .toList(growable: false);
+  }
+
+  // Returns the cleaned but unnormalized 2D window (10 x 126).
+  // This keeps compatibility with services that still own normalization.
+  List<List<double>>? buildRawWindow2D() {
+    if (!isReady) {
+      return null;
+    }
+
+    _framesSinceLastEmit = 0;
+    return _window
+        .map((frame) => List<double>.from(frame))
         .toList(growable: false);
   }
 

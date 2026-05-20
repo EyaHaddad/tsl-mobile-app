@@ -109,6 +109,11 @@ void main() {
       expect(output, isNotNull);
       expect(output!.length, equals(10));
       expect(output.every((frame) => frame.length == 126), isTrue);
+
+      final rawOutput = manager.buildRawWindow2D();
+      expect(rawOutput, isNotNull);
+      expect(rawOutput!.length, equals(10));
+      expect(rawOutput.every((frame) => frame.length == 126), isTrue);
     });
 
     test('SequenceManager should normalize features correctly', () async {
@@ -132,6 +137,14 @@ void main() {
       for (final frame in output!) {
         for (final value in frame) {
           expect(value, closeTo(0.25, 0.001));
+        }
+      }
+
+      final rawOutput = manager.buildRawWindow2D();
+      expect(rawOutput, isNotNull);
+      for (final frame in rawOutput!) {
+        for (final value in frame) {
+          expect(value, equals(1.0));
         }
       }
     });
@@ -187,6 +200,12 @@ void main() {
       expect(output, isNotNull);
       expect(output!.length, equals(10));
       expect(output.every((frame) => frame.length == 126), isTrue);
+
+      final rawOutput = manager.buildRawWindow2D();
+      expect(rawOutput, isNotNull);
+      expect(rawOutput!.first.length, equals(126));
+      expect(rawOutput.first.take(50), everyElement(equals(0.5)));
+      expect(rawOutput.first.skip(50), everyElement(equals(0.0)));
     });
 
     test('SequenceManager should respect stride', () async {
