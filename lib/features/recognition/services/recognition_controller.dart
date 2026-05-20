@@ -32,11 +32,6 @@ class RecognitionController {
   int _framesWithValidLandmarks = 0;
   int _inferenceCount = 0;
 
-  // HAND LOSS TRACKING
-  int _frameCountMissingHand = 0; // Compte les frames sans main détectée
-  static const int _maxMissingHandFrames =
-      5; // Reset buffer si main perdue > 5 frames
-
   // LSTM SLIDING WINDOW BUFFER
   int _bufferFilledCount =
       0; // Compte combien de fois le buffer a été plein et inférence lancée
@@ -91,7 +86,6 @@ class RecognitionController {
     // LSTM buffer initialization
     sequenceManager.reset();
     _bufferFilledCount = 0;
-    _frameCountMissingHand = 0; // Reset hand loss counter
 
     print('═══════════════════════════════════════════════════════════');
     print('🎬 [START] Pipeline commencée - en écoute des frames caméra');
@@ -269,7 +263,6 @@ class RecognitionController {
         // SequenceManager owns padding, trimming, NaN cleanup, stride, and the
         // 10-frame sliding window expected by the LSTM metadata.
         final shouldInfer = sequenceManager.addFrameFeatures(frameFeatures);
-        _frameCountMissingHand = 0; // Reset le compteur de main perdue
 
         print(
           '📦 [BUFFER] SequenceManager: ${sequenceManager.windowLength}/${SequenceManager.seqLen}',
@@ -299,21 +292,9 @@ class RecognitionController {
         // ❌ Pas de main détectée
         print('⚠️ [BUFFER] Frame ignorée (Pas de landmarks)');
 
-        // Optionnel : Si on perd la main trop longtemps, on reset
         if (sequenceManager.windowLength > 0) {
-          _frameCountMissingHand++;
-          print(
-            '⏱️ [BUFFER] Main perdue: $_frameCountMissingHand/$_maxMissingHandFrames frames',
-          );
-
-          if (_frameCountMissingHand > _maxMissingHandFrames) {
-            // Si on perd la main pendant trop longtemps
-            sequenceManager.reset();
-            print(
-              '🧹 [BUFFER] Reset (Main perdue $_frameCountMissingHand frames)',
-            );
-            _frameCountMissingHand = 0; // Reset le compteur
-          }
+          sequenceManager.reset();
+          print('🧹 [BUFFER] Reset immédiat (aucune main détectée)');
         }
         return null;
       }

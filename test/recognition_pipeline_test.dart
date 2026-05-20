@@ -177,18 +177,13 @@ void main() {
 
       expect(manager.isReady, isTrue);
 
-      final output = manager.buildModelInput2D();
+      final output = manager.buildRawWindow2D();
       expect(output, isNotNull);
       expect(output!.length, equals(10));
       expect(output.every((frame) => frame.length == 126), isTrue);
-
-      final rawOutput = manager.buildRawWindow2D();
-      expect(rawOutput, isNotNull);
-      expect(rawOutput!.length, equals(10));
-      expect(rawOutput.every((frame) => frame.length == 126), isTrue);
     });
 
-    test('SequenceManager should normalize features correctly', () async {
+    test('SequenceManager should preserve raw features', () async {
       final scalerMean = List.filled(126, 0.5);
       final scalerScale = List.filled(126, 2.0);
       final manager = SequenceManager(
@@ -202,19 +197,10 @@ void main() {
         manager.addFrameFeatures(frameFeatures);
       }
 
-      final output = manager.buildModelInput2D();
+      final output = manager.buildRawWindow2D();
       expect(output, isNotNull);
 
-      // Check normalization: (1.0 - 0.5) / 2.0 = 0.25
       for (final frame in output!) {
-        for (final value in frame) {
-          expect(value, closeTo(0.25, 0.001));
-        }
-      }
-
-      final rawOutput = manager.buildRawWindow2D();
-      expect(rawOutput, isNotNull);
-      for (final frame in rawOutput!) {
         for (final value in frame) {
           expect(value, equals(1.0));
         }
@@ -235,7 +221,7 @@ void main() {
         manager.addFrameFeatures(frameFeatures);
       }
 
-      final output = manager.buildModelInput2D();
+      final output = manager.buildRawWindow2D();
       expect(output, isNotNull);
 
       // NaN should be converted to 0.0
@@ -268,16 +254,12 @@ void main() {
         manager.addFrameFeatures(frameFeatures);
       }
 
-      final output = manager.buildModelInput2D();
+      final output = manager.buildRawWindow2D();
       expect(output, isNotNull);
       expect(output!.length, equals(10));
       expect(output.every((frame) => frame.length == 126), isTrue);
-
-      final rawOutput = manager.buildRawWindow2D();
-      expect(rawOutput, isNotNull);
-      expect(rawOutput!.first.length, equals(126));
-      expect(rawOutput.first.take(50), everyElement(equals(0.5)));
-      expect(rawOutput.first.skip(50), everyElement(equals(0.0)));
+      expect(output.first.take(50), everyElement(equals(0.5)));
+      expect(output.first.skip(50), everyElement(equals(0.0)));
     });
 
     test('SequenceManager should respect stride', () async {

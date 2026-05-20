@@ -1,14 +1,12 @@
 import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/services.dart';
 
 // Manages the 10-frame sliding window sent to the LSTM
 //
 // Simple goal:
 // - keep exactly 10 frames
-// - return data in shape (1, 10, 126)
-// - apply the same scaler used during training
+// - return cleaned raw data in shape (10, 126)
+// - leave model normalization to TFLiteService
 class SequenceManager {
   // Real Flutter asset path where metadata is stored
   static const String defaultMetaAssetPath =
@@ -122,51 +120,8 @@ class SequenceManager {
   // DEBUG: Getter for current window length
   int get windowLength => _window.length;
 
-  // Returns shape (1, 10, 126) flattened in row-major order as float32
-  Float32List? buildModelInputFloat32() {
-    if (!isReady) {
-      return null;
-    }
-
-    _framesSinceLastEmit = 0;
-    final output = Float32List(seqLen * featureCount);
-    int offset = 0;
-
-    for (final frame in _window) {
-      for (int i = 0; i < featureCount; i++) {
-        final cleaned = frame[i].isNaN ? 0.0 : frame[i];
-        final scale = _scalerScale[i] == 0.0 ? 1.0 : _scalerScale[i];
-        final standardized = (cleaned - _scalerMean[i]) / scale;
-        output[offset++] = standardized.toDouble();
-      }
-    }
-
-    return output;
-  }
-
-  // Returns the normalized 2D window (10 x 126)
-  // Useful for debug before sending to TFLite
-  List<List<double>>? buildModelInput2D() {
-    if (!isReady) {
-      return null;
-    }
-
-    _framesSinceLastEmit = 0;
-    return _window
-        .map((frame) {
-          final normalized = List<double>.filled(featureCount, 0.0);
-          for (int i = 0; i < featureCount; i++) {
-            final cleaned = frame[i].isNaN ? 0.0 : frame[i];
-            final scale = _scalerScale[i] == 0.0 ? 1.0 : _scalerScale[i];
-            normalized[i] = (cleaned - _scalerMean[i]) / scale;
-          }
-          return normalized;
-        })
-        .toList(growable: false);
-  }
-
   // Returns the cleaned but unnormalized 2D window (10 x 126).
-  // This keeps compatibility with services that still own normalization.
+  // TFLiteService applies scaler normalization before inference.
   List<List<double>>? buildRawWindow2D() {
     if (!isReady) {
       return null;
