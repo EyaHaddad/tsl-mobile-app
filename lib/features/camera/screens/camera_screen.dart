@@ -100,8 +100,9 @@ class _CameraScreenState extends State<CameraScreen> {
         _cameraError = e.toString();
       });
     } finally {
-      if (!mounted) return;
-      setState(() => _isSwitchingCamera = false);
+      if (mounted) {
+        setState(() => _isSwitchingCamera = false);
+      }
     }
   }
 
@@ -113,7 +114,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
     try {
       print('🚀 [INIT] Démarrage de l\'initialisation du pipeline...');
-      
+
       // Load metadata and create SequenceManager with correct scaler values
       final sequenceManager = await SequenceManager.fromDefaultMetaAsset()
           .timeout(
@@ -131,9 +132,13 @@ class _CameraScreenState extends State<CameraScreen> {
       );
 
       // Listen to recognition results from TFLite
-      _resultSubscription = _recognitionController.resultStream.listen((result) {
+      _resultSubscription = _recognitionController.resultStream.listen((
+        result,
+      ) {
         // DEBUG: Verify AI is processing frames
-        print('🔥 IA en action : ${result.primaryGestureAr} (Confiance: ${(result.primaryConfidence * 100).toStringAsFixed(1)}%)');
+        print(
+          '🔥 IA en action : ${result.primaryGestureAr} (Confiance: ${(result.primaryConfidence * 100).toStringAsFixed(1)}%)',
+        );
         if (mounted) {
           setState(() {
             _lastRecognitionResult = result;
@@ -150,7 +155,8 @@ class _CameraScreenState extends State<CameraScreen> {
           )
           .timeout(
             const Duration(seconds: 10),
-            onTimeout: () => throw TimeoutException('Timeout initializing TFLite model'),
+            onTimeout: () =>
+                throw TimeoutException('Timeout initializing TFLite model'),
           );
       print('✅ [INIT] Modèle TFLite chargé avec succès!');
 
@@ -162,11 +168,13 @@ class _CameraScreenState extends State<CameraScreen> {
       // DÉSACTIVÉ: startVideoRecording() verrouille le flux caméra sur Android!
       // On utilise UNIQUEMENT ImageStream pour l'IA
       // await _cameraService.startVideoRecording();
-      
+
       if (!mounted) return;
       setState(() => _isRecording = true);
-      
-      print('✅ Enregistrement commencé - IA activée (ImageStream uniquement, 5 FPS)');
+
+      print(
+        '✅ Enregistrement commencé - IA activée (ImageStream uniquement, 5 FPS)',
+      );
     } on TimeoutException catch (e) {
       print('❌ [TIMEOUT] $e');
       _showErrorSnackBar('استغرق التحميل وقتاً طويلاً جداً: $e');
@@ -190,9 +198,13 @@ class _CameraScreenState extends State<CameraScreen> {
     print('   - _lastRecognitionResult: $_lastRecognitionResult');
     if (_lastRecognitionResult != null) {
       print('   - Signe reconnu: ${_lastRecognitionResult!.primaryGestureAr}');
-      print('   - Confiance: ${(_lastRecognitionResult!.primaryConfidence * 100).toStringAsFixed(1)}%');
+      print(
+        '   - Confiance: ${(_lastRecognitionResult!.primaryConfidence * 100).toStringAsFixed(1)}%',
+      );
     } else {
-      print('   ⚠️ Aucun résultat! MediaPipe n\'a peut-être pas détecté les mains.');
+      print(
+        '   ⚠️ Aucun résultat! MediaPipe n\'a peut-être pas détecté les mains.',
+      );
     }
 
     // DÉSACTIVÉ: stopVideoRecording() verrouille le flux
@@ -213,9 +225,7 @@ class _CameraScreenState extends State<CameraScreen> {
     if (!mounted) return;
     Navigator.of(context).push(
       FadeSlidePageRoute(
-        page: ResultScreen(
-          recognitionResult: _lastRecognitionResult,
-        ),
+        page: ResultScreen(recognitionResult: _lastRecognitionResult),
       ),
     );
   }
@@ -434,10 +444,11 @@ class _CameraScreenState extends State<CameraScreen> {
                               : '[انتظر...]',
                           style: TextStyle(
                             fontSize: 16,
-                            color: _lastRecognitionResult != null 
-                                ? (_lastRecognitionResult!.primaryConfidence > 0.7 
-                                    ? Colors.green 
-                                    : Colors.orange)
+                            color: _lastRecognitionResult != null
+                                ? (_lastRecognitionResult!.primaryConfidence >
+                                          0.7
+                                      ? Colors.green
+                                      : Colors.orange)
                                 : Colors.grey,
                           ),
                         ),
@@ -448,12 +459,13 @@ class _CameraScreenState extends State<CameraScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: Text(
-                        _lastRecognitionResult?.primaryGestureAr ?? 'في انتظار الإشارة...',
+                        _lastRecognitionResult?.primaryGestureAr ??
+                            'في انتظار الإشارة...',
                         textAlign: TextAlign.right,
                         style: TextStyle(
                           fontSize: 18,
-                          color: _lastRecognitionResult != null 
-                              ? Colors.black87 
+                          color: _lastRecognitionResult != null
+                              ? Colors.black87
                               : Colors.black54,
                           fontWeight: FontWeight.w500,
                         ),

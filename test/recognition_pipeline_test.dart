@@ -3,6 +3,8 @@ import 'package:tsl_mobile_app/features/recognition/models/managers/sequence_man
 import 'package:tsl_mobile_app/features/recognition/services/tflite_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('TFLiteService Error Handling', () {
     test('Initialize should fail if model file not found', () async {
       final service = TFLiteService();
@@ -209,12 +211,12 @@ void main() {
     });
 
     test(
-      'SequenceManager.fromDefaultMetaAsset should fail if asset missing',
+      'SequenceManager.fromDefaultMetaAsset should load declared metadata',
       () async {
-        expect(
-          () => SequenceManager.fromDefaultMetaAsset(),
-          throwsA(isA<Exception>()),
-        );
+        final manager = await SequenceManager.fromDefaultMetaAsset();
+
+        expect(manager.modelInputShape, equals([1, 10, 126]));
+        expect(manager.isReady, isFalse);
       },
     );
   });
