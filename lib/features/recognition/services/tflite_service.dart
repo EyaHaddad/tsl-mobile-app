@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import '../models/result_model.dart';
@@ -40,7 +39,9 @@ class TFLiteService {
       }
 
       // 🔍 DEBUG: Vérifier le mapping des classes
-      print('🏷️ [CLASS_MAPPING] ${_metadata!.classNames.length} signes chargés:');
+      print(
+        '🏷️ [CLASS_MAPPING] ${_metadata!.classNames.length} signes chargés:',
+      );
       for (int i = 0; i < _metadata!.classNames.length && i < 5; i++) {
         print('  Index $i → "${_metadata!.classNames[i]}"');
       }
@@ -151,11 +152,27 @@ class TFLiteService {
       );
     }
 
+    final invalidFrameIndex = sequence.indexWhere(
+      (frame) => frame.length != _metadata!.numFeatures,
+    );
+    if (invalidFrameIndex >= 0) {
+      return _buildResultData(
+        gesture: 'InvalidInput',
+        confidence: 0.0,
+        sequenceLength: sequence.length,
+        debug:
+            'Feature count mismatch at frame $invalidFrameIndex. Expected ${_metadata!.numFeatures}, got ${sequence[invalidFrameIndex].length}',
+      );
+    }
+
     try {
       final startTime = DateTime.now();
 
       // Run inference with timeout protection
-      final inferenceResult = await _performInferenceWithTimeout(sequence, timeout);
+      final inferenceResult = await _performInferenceWithTimeout(
+        sequence,
+        timeout,
+      );
 
       final processingTimeMs = DateTime.now()
           .difference(startTime)
@@ -173,8 +190,12 @@ class TFLiteService {
       final gestureAr = _metadata!.getGestureNameAr(gesture);
 
       // 🔍 DEBUG: Afficher le top-3 des prédictions
-      print('🧠 [INFERENCE_DEBUG] Top prediction: "$gesture" (Index $primaryIdx) | Confiance: ${(confidence * 100).toStringAsFixed(1)}%');
-      print('🎯 [RESULT] Signe détecté : $gesture ($gestureAr) | Confiance : ${(confidence * 100).toStringAsFixed(1)}%');
+      print(
+        '🧠 [INFERENCE_DEBUG] Top prediction: "$gesture" (Index $primaryIdx) | Confiance: ${(confidence * 100).toStringAsFixed(1)}%',
+      );
+      print(
+        '🎯 [RESULT] Signe détecté : $gesture ($gestureAr) | Confiance : ${(confidence * 100).toStringAsFixed(1)}%',
+      );
 
       return _buildResultData(
         gesture: gesture,
@@ -211,17 +232,10 @@ class TFLiteService {
       throw Exception('Interpreter not initialized');
     }
 
-    // Flatten and normalize sequence to 1D array: [seqLen * numFeatures]
-    final flatSequence = <double>[];
-    for (final frame in sequence) {
-      flatSequence.addAll(frame);
-    }
-
-    // Apply normalization (z-score): (x - mean) / scale
-    final normalizedSequence = _normalizeSequence(flatSequence);
-
-    // Create input tensor as Float32List for TFLite
-    final input = [Float32List.fromList(normalizedSequence)];
+    // Apply normalization while preserving the LSTM input shape:
+    // [1, seqLen, numFeatures], e.g. [1, 10, 126].
+    final normalizedSequence = _normalizeSequence(sequence);
+    final input = [normalizedSequence];
 
     // Create output tensor for logits [1, numClasses]
     final numClasses = _metadata!.numClasses;
@@ -231,37 +245,34 @@ class TFLiteService {
     );
 
     // Run inference with timeout
-    return Future.delayed(Duration.zero).then((_) {
-      _interpreter!.run(input, outputLogits);
+    return Future.delayed(Duration.zero)
+        .then((_) {
+          _interpreter!.run(input, outputLogits);
 
-      // Get probabilities via softmax
-      final logits = outputLogits[0];
-      final probabilities = _applySoftmax(logits);
+          // Get probabilities via softmax
+          final logits = outputLogits[0];
+          final probabilities = _applySoftmax(logits);
 
-      // Find top prediction
-      var maxIdx = 0;
-      var maxProb = probabilities[0];
-      for (int i = 1; i < probabilities.length; i++) {
-        if (probabilities[i] > maxProb) {
-          maxProb = probabilities[i];
-          maxIdx = i;
-        }
-      }
+          // Find top prediction
+          var maxIdx = 0;
+          var maxProb = probabilities[0];
+          for (int i = 1; i < probabilities.length; i++) {
+            if (probabilities[i] > maxProb) {
+              maxProb = probabilities[i];
+              maxIdx = i;
+            }
+          }
 
-      return {
-        'primaryIdx': maxIdx,
-        'confidence': maxProb.clamp(0.0, 1.0),
-      };
-    }).timeout(timeout);
+          return {'primaryIdx': maxIdx, 'confidence': maxProb.clamp(0.0, 1.0)};
+        })
+        .timeout(timeout);
   }
 
-  /// Normalize sequence using scaler mean and scale from metadata
-  /// Applies z-score normalization: (x - mean) / scale
-  /// 
-  /// IMPORTANT: The sequence is flattened (1260 elements = 10 frames * 126 features).
-  /// The scaler has only 126 elements (per-feature normalization).
-  /// We use modulo (%) to apply the 126-element scaler across all 1260 flattened values.
-  List<double> _normalizeSequence(List<double> sequence) {
+  /// Normalize sequence using scaler mean and scale from metadata.
+  /// Applies z-score normalization: (x - mean) / scale.
+  /// Keeps the LSTM input as [seqLen, numFeatures] so the interpreter receives
+  /// [1, seqLen, numFeatures], matching lstm_dataset_meta.json.
+  List<List<double>> _normalizeSequence(List<List<double>> sequence) {
     final scalerMean = _metadata!.scalerMean;
     final scalerScale = _metadata!.scalerScale;
     final numFeatures = _metadata!.numFeatures; // Should be 126
@@ -269,37 +280,41 @@ class TFLiteService {
     // Safety check: ensure scaler dimensions match the expected feature count
     if (scalerMean.length != numFeatures || scalerScale.length != numFeatures) {
       throw Exception(
-          'Scaler dimension mismatch: Expected $numFeatures features, '
-          'but got mean length ${scalerMean.length} and scale length ${scalerScale.length}');
+        'Scaler dimension mismatch: Expected $numFeatures features, '
+        'but got mean length ${scalerMean.length} and scale length ${scalerScale.length}',
+      );
     }
 
-    // Expected sequence length after flattening: seqLen * numFeatures (10 * 126 = 1260)
-    final expectedLength = _metadata!.seqLen * numFeatures;
-    if (sequence.length != expectedLength) {
+    if (sequence.length != _metadata!.seqLen) {
       throw Exception(
-          'Sequence length mismatch: Expected $expectedLength (${_metadata!.seqLen} frames * $numFeatures features), '
-          'but got ${sequence.length}');
+        'Sequence length mismatch: Expected ${_metadata!.seqLen} frames, '
+        'but got ${sequence.length}',
+      );
     }
 
-    return List<double>.generate(
-      sequence.length, // 1260 elements
-      (i) {
-        // Use modulo to always point to the correct feature index (0-125)
-        // regardless of which frame we're on (frame 0-9)
-        final featureIdx = i % numFeatures;
-        
-        // ✅ POINT C: Debug modulo arithmetic (sample every 126 indices)
-        if (i > 0 && i % 126 == 0) {
-          print('[MODULO_DEBUG] Transition at index $i: feature reset to index 0');
-        }
-        
-        final normalized =
-            (sequence[i] - scalerMean[featureIdx]) / scalerScale[featureIdx];
-        
-        // Clamp to reasonable range to prevent extreme values from outliers
-        return normalized.clamp(-10.0, 10.0);
-      },
-    );
+    return sequence
+        .map((frame) {
+          if (frame.length != numFeatures) {
+            throw Exception(
+              'Feature count mismatch: Expected $numFeatures features, '
+              'but got ${frame.length}',
+            );
+          }
+
+          return List<double>.generate(numFeatures, (featureIdx) {
+            final rawValue = frame[featureIdx];
+            final cleaned = rawValue.isNaN || rawValue.isInfinite
+                ? 0.0
+                : rawValue;
+            final scale = scalerScale[featureIdx] == 0.0
+                ? 1.0
+                : scalerScale[featureIdx];
+            final normalized = (cleaned - scalerMean[featureIdx]) / scale;
+
+            return normalized.clamp(-10.0, 10.0);
+          }, growable: false);
+        })
+        .toList(growable: false);
   }
 
   /// Apply softmax activation to logits
@@ -313,8 +328,7 @@ class TFLiteService {
     final maxLogit = logits.reduce((a, b) => a > b ? a : b);
 
     // Compute stable softmax
-    final expLogits =
-        logits.map((x) => exp(x - maxLogit)).toList();
+    final expLogits = logits.map((x) => exp(x - maxLogit)).toList();
     final sumExp = expLogits.fold<double>(0.0, (sum, v) => sum + v);
 
     if (sumExp == 0.0 || sumExp.isNaN || sumExp.isInfinite) {
