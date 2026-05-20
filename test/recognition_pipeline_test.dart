@@ -88,6 +88,78 @@ void main() {
     });
   });
 
+  group('TFLiteService Shape and Normalization', () {
+    test('validateSequenceShape accepts baseline model shape', () {
+      final sequence = List.generate(10, (_) => List.filled(126, 0.0));
+
+      final error = TFLiteService.validateSequenceShape(
+        sequence,
+        seqLen: 10,
+        numFeatures: 126,
+      );
+
+      expect(error, isNull);
+    });
+
+    test('validateSequenceShape rejects wrong sequence length', () {
+      final sequence = List.generate(9, (_) => List.filled(126, 0.0));
+
+      final error = TFLiteService.validateSequenceShape(
+        sequence,
+        seqLen: 10,
+        numFeatures: 126,
+      );
+
+      expect(error, contains('Sequence length mismatch'));
+    });
+
+    test('validateSequenceShape rejects wrong frame feature count', () {
+      final sequence = List.generate(10, (_) => List.filled(126, 0.0));
+      sequence[3] = List.filled(125, 0.0);
+
+      final error = TFLiteService.validateSequenceShape(
+        sequence,
+        seqLen: 10,
+        numFeatures: 126,
+      );
+
+      expect(error, contains('Feature count mismatch at frame 3'));
+    });
+
+    test('normalizeSequenceForModel preserves 10x126 shape', () {
+      final sequence = List.generate(10, (_) => List.filled(126, 1.0));
+      final normalized = TFLiteService.normalizeSequenceForModel(
+        sequence,
+        scalerMean: List.filled(126, 0.5),
+        scalerScale: List.filled(126, 2.0),
+        seqLen: 10,
+        numFeatures: 126,
+      );
+
+      expect(normalized.length, equals(10));
+      expect(normalized.every((frame) => frame.length == 126), isTrue);
+      expect(normalized.first.first, closeTo(0.25, 0.001));
+    });
+
+    test('normalizeSequenceForModel handles bad numeric values', () {
+      final sequence = List.generate(10, (_) => List.filled(126, 1.0));
+      sequence[0][0] = double.nan;
+      sequence[0][1] = double.infinity;
+
+      final normalized = TFLiteService.normalizeSequenceForModel(
+        sequence,
+        scalerMean: List.filled(126, 0.0),
+        scalerScale: List.filled(126, 0.0),
+        seqLen: 10,
+        numFeatures: 126,
+      );
+
+      expect(normalized[0][0], equals(0.0));
+      expect(normalized[0][1], equals(0.0));
+      expect(normalized[0][2], equals(1.0));
+    });
+  });
+
   group('SequenceManager Shape Validation', () {
     test('SequenceManager should maintain correct window size', () async {
       final scalerMean = List.filled(126, 0.0);

@@ -18,6 +18,70 @@ class TFLiteService {
 
   TFLiteService();
 
+  static String? validateSequenceShape(
+    List<List<double>> sequence, {
+    required int seqLen,
+    required int numFeatures,
+  }) {
+    if (sequence.isEmpty) {
+      return 'Input sequence is empty.';
+    }
+
+    if (sequence.length != seqLen) {
+      return 'Sequence length mismatch. Expected $seqLen, got ${sequence.length}';
+    }
+
+    final invalidFrameIndex = sequence.indexWhere(
+      (frame) => frame.length != numFeatures,
+    );
+    if (invalidFrameIndex >= 0) {
+      return 'Feature count mismatch at frame $invalidFrameIndex. Expected $numFeatures, got ${sequence[invalidFrameIndex].length}';
+    }
+
+    return null;
+  }
+
+  static List<List<double>> normalizeSequenceForModel(
+    List<List<double>> sequence, {
+    required List<double> scalerMean,
+    required List<double> scalerScale,
+    required int seqLen,
+    required int numFeatures,
+  }) {
+    final shapeError = validateSequenceShape(
+      sequence,
+      seqLen: seqLen,
+      numFeatures: numFeatures,
+    );
+    if (shapeError != null) {
+      throw ArgumentError(shapeError);
+    }
+
+    if (scalerMean.length != numFeatures || scalerScale.length != numFeatures) {
+      throw ArgumentError(
+        'Scaler dimension mismatch: Expected $numFeatures features, '
+        'but got mean length ${scalerMean.length} and scale length ${scalerScale.length}',
+      );
+    }
+
+    return sequence
+        .map((frame) {
+          return List<double>.generate(numFeatures, (featureIdx) {
+            final rawValue = frame[featureIdx];
+            final cleaned = rawValue.isNaN || rawValue.isInfinite
+                ? 0.0
+                : rawValue;
+            final scale = scalerScale[featureIdx] == 0.0
+                ? 1.0
+                : scalerScale[featureIdx];
+            final normalized = (cleaned - scalerMean[featureIdx]) / scale;
+
+            return normalized.clamp(-10.0, 10.0);
+          }, growable: false);
+        })
+        .toList(growable: false);
+  }
+
   // Load metadata and prepare the service with validation
   Future<void> initialize(
     String modelPath, {
@@ -141,27 +205,18 @@ class TFLiteService {
       );
     }
 
-    // Validate sequence length against loaded metadata
-    if (sequence.length != _metadata!.seqLen) {
-      return _buildResultData(
-        gesture: 'InvalidInput',
-        confidence: 0.0,
-        sequenceLength: sequence.length,
-        debug:
-            'Sequence length mismatch. Expected ${_metadata!.seqLen}, got ${sequence.length}',
-      );
-    }
-
-    final invalidFrameIndex = sequence.indexWhere(
-      (frame) => frame.length != _metadata!.numFeatures,
+    // Validate sequence shape against loaded metadata
+    final shapeError = validateSequenceShape(
+      sequence,
+      seqLen: _metadata!.seqLen,
+      numFeatures: _metadata!.numFeatures,
     );
-    if (invalidFrameIndex >= 0) {
+    if (shapeError != null) {
       return _buildResultData(
         gesture: 'InvalidInput',
         confidence: 0.0,
         sequenceLength: sequence.length,
-        debug:
-            'Feature count mismatch at frame $invalidFrameIndex. Expected ${_metadata!.numFeatures}, got ${sequence[invalidFrameIndex].length}',
+        debug: shapeError,
       );
     }
 
