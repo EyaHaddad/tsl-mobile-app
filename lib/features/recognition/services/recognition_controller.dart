@@ -38,6 +38,7 @@ class RecognitionController {
 
   // Stream results for UI to listen
   late final StreamController<RecognitionResultData> _resultController;
+  StreamSubscription<List<double>>? _nativeFeatureSubscription;
 
   RecognitionController({
     required this.cameraService,
@@ -95,38 +96,30 @@ class RecognitionController {
     );
     print('═══════════════════════════════════════════════════════════');
     try {
-      await cameraService.startImageStream((CameraImage image) async {
-        // VERROU: DROP la frame si on est déjà occupé à traiter une autre
-        if (_isHandlingFrame) {
-          print(
-            '⏭️ [LOCK] Frame #${_totalFramesReceived + 1} DROP (traitement précédent en cours)',
-          );
-          return;
-        }
+      await mediaPipeService.startNativeCameraAnalysis();
+      _nativeFeatureSubscription = mediaPipeService.nativeFrameFeaturesStream
+          .listen((features) {
+            if (_isHandlingFrame) {
+              print(
+                '⏭️ [LOCK] Frame #${_totalFramesReceived + 1} DROP (traitement précédent en cours)',
+              );
+              return;
+            }
 
-        // Throttle: ne traite qu'une frame tous les 200ms (5 FPS)
-        final now = DateTime.now();
-        final lastTime = _lastProcessedTime;
-        final shouldProcessFrame =
-            lastTime == null ||
-            now.difference(lastTime).inMilliseconds >= _minFrameDelayMs;
+            final now = DateTime.now();
+            final lastTime = _lastProcessedTime;
+            final shouldProcessFrame =
+                lastTime == null ||
+                now.difference(lastTime).inMilliseconds >= _minFrameDelayMs;
 
-        if (!shouldProcessFrame) {
-          return; // Skip this frame, throttle not elapsed
-        }
+            if (!shouldProcessFrame) {
+              return;
+            }
 
-        // ACQUIRE LOCK - Marque que l'on traite une frame
-        _isHandlingFrame = true;
-        _lastProcessedTime = now;
-
-        try {
-          // Non-blocking frame processing
-          unawaited(_processFrame(image));
-        } catch (e) {
-          print('❌ [STREAM] Erreur lors du push du frame: $e');
-          _isHandlingFrame = false; // Libère le verrou en cas d'erreur
-        }
-      });
+            _isHandlingFrame = true;
+            _lastProcessedTime = now;
+            unawaited(_processNativeFrameFeatures(features));
+          });
     } catch (e) {
       _isRunning = false;
       rethrow;
@@ -192,6 +185,29 @@ class RecognitionController {
     }
   }
 
+  Future<void> _processNativeFrameFeatures(List<double> frameFeatures) async {
+    if (!_isRunning) {
+      _isHandlingFrame = false;
+      return;
+    }
+
+    _totalFramesReceived++;
+    _framesProcessed++;
+
+    try {
+      print(
+        '📥 [CAMERAX] Frame #$_totalFramesReceived | Features: ${frameFeatures.length}',
+      );
+      await processFrameFeatures(frameFeatures);
+    } catch (e) {
+      print('❌ [ERROR] Erreur lors du traitement du frame natif: $e');
+      if (kDebugMode) print('Stack trace: ${StackTrace.current}');
+    } finally {
+      print('🔓 [LOCK] Frame #$_totalFramesReceived traitée - verrou libéré');
+      _isHandlingFrame = false;
+    }
+  }
+
   // Stops listening to camera frames
   Future<void> stop() async {
     _isRunning = false;
@@ -199,6 +215,9 @@ class RecognitionController {
     if (cameraService.isStreamingImages) {
       await cameraService.stopImageStream();
     }
+    await _nativeFeatureSubscription?.cancel();
+    _nativeFeatureSubscription = null;
+    await mediaPipeService.stopNativeCameraAnalysis();
     sequenceManager.reset();
     inferenceService.resetMetrics();
     print('═══════════════════════════════════════════════════════════');
@@ -217,6 +236,59 @@ class RecognitionController {
 
   // Processes one frame bytes and returns prediction when a full window is ready
   // This is the core inference pipeline
+  Future<RecognitionResultData?> processFrameFeatures(
+    List<double> frameFeatures,
+  ) async {
+    if (!_isRunning) {
+      return null;
+    }
+
+    final nonZeroFeatures = frameFeatures.where((f) => f != 0.0).length;
+    final hasValidLandmarks = nonZeroFeatures > 0;
+
+    if (hasValidLandmarks) {
+      _framesWithValidLandmarks++;
+      print(
+        '✅ [MEDIAPIPE] Landmarks détectés! $nonZeroFeatures features non-zéro',
+      );
+    } else {
+      print('⚠️ [MEDIAPIPE] Aucun landmark détecté - frame tous les zéros');
+    }
+
+    if (hasValidLandmarks && frameFeatures.isNotEmpty) {
+      final shouldInfer = sequenceManager.addFrameFeatures(frameFeatures);
+
+      print(
+        '📦 [BUFFER] SequenceManager: ${sequenceManager.windowLength}/${SequenceManager.seqLen}',
+      );
+
+      if (nonZeroFeatures < 10) {
+        print(
+          '⚠️ [SUSPICIOUS_DATA] Only $nonZeroFeatures non-zero landmarks (expected ~60+)',
+        );
+      }
+
+      if (shouldInfer && !_isBusy) {
+        final inputSequence = sequenceManager.buildRawWindow2D();
+        if (inputSequence == null) {
+          print('❌ [LSTM] SequenceManager ready but input sequence is null');
+          return null;
+        }
+        _bufferFilledCount++;
+        await _runInference(inputSequence);
+      }
+
+      return null;
+    }
+
+    print('⚠️ [BUFFER] Frame ignorée (Pas de landmarks)');
+    if (sequenceManager.windowLength > 0) {
+      sequenceManager.reset();
+      print('🧹 [BUFFER] Reset immédiat (aucune main détectée)');
+    }
+    return null;
+  }
+
   Future<RecognitionResultData?> processFrameBytes(
     Uint8List encodedFrame, {
     int width = 320,

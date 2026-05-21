@@ -160,10 +160,18 @@ class _CameraScreenState extends State<CameraScreen> {
           );
       print('✅ [INIT] Modèle TFLite chargé avec succès!');
 
-      // Start live recognition (ImageStream pour l'IA)
-      print('📹 [INIT] Démarrage du flux caméra...');
+      // CameraX native analysis needs exclusive access to the camera.
+      await _cameraService.dispose();
+      if (mounted) {
+        setState(() {
+          _cameraError = null;
+        });
+      }
+
+      // Start live recognition with native CameraX frames.
+      print('📹 [INIT] Démarrage du flux CameraX natif...');
       await _recognitionController.start();
-      print('✅ [INIT] Pipeline prêt! Flux caméra activé.');
+      print('✅ [INIT] Pipeline prêt! Flux CameraX activé.');
 
       // DÉSACTIVÉ: startVideoRecording() verrouille le flux caméra sur Android!
       // On utilise UNIQUEMENT ImageStream pour l'IA
@@ -192,6 +200,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
     // Stop recognition
     await _recognitionController.stop();
+    _initializeControllerFuture = _initCamera();
 
     // DEBUG: Check if we have a recognition result
     print('📊 Au moment du clic "Finir":');
